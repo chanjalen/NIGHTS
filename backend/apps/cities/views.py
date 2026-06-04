@@ -31,8 +31,9 @@ class CityListView(generics.ListAPIView):
                 .filter(Q(name__icontains=search) | Q(sim__gt=0.2))
                 .order_by("-sim", "-venue_count")
             )
-        # Default: "most venues first" (powers Popular Cities + the ticker).
-        return City.objects.order_by("-venue_count", "name")
+        # Default (Popular Cities + ticker): only cities that actually have
+        # venues, most first. The full ~19k list is reachable via ?search=.
+        return City.objects.filter(venue_count__gt=0).order_by("-venue_count", "name")
 
 
 class CityDetailView(generics.RetrieveAPIView):

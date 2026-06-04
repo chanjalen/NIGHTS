@@ -35,7 +35,9 @@ export default function LiveTicker() {
         <div className="ticker-track">
           {loop.map((city, i) => (
             <Link key={`${city.id}-${i}`} href={`/city/${city.slug}`} className="ticker-item">
-              <span className="ticker-city">{city.name}</span>
+              <span className="ticker-city">
+                {city.name}{city.state ? `, ${city.state}` : ''}
+              </span>
               <span className="ticker-count">{city.venue_count.toLocaleString()} venues</span>
             </Link>
           ))}

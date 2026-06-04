@@ -119,7 +119,9 @@ export default function CitySearchForm() {
               onMouseDown={() => selectCity(city)}
               onMouseEnter={() => setHighlighted(i)}
             >
-              <span className="city-dropdown-name">{city.name}</span>
+              <span className="city-dropdown-name">
+                {city.name}{city.state ? `, ${city.state}` : ''}
+              </span>
               <span className="city-dropdown-count">{city.venue_count} venues</span>
             </li>
           ))}

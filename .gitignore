@@ -90,3 +90,9 @@ desktop.ini
 
 # Claude skills lockfile (tooling)
 skills-lock.json
+
+# Raw datasets — seeded into the DB, not committed (large + may be non-redistributable)
+backend/data/*
+!backend/data/.gitkeep
+!backend/data/CLAUDE.md
+!backend/data/Claude.md

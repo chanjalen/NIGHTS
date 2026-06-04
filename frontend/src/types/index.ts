@@ -1,9 +1,11 @@
 export interface City {
   id: string;
   name: string;
+  state: string;
   slug: string;
   lat: number;
   lng: number;
+  population: number | null;
   venue_count: number;
 }
 

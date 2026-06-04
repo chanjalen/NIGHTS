@@ -6,9 +6,13 @@ from django.db import models
 class City(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
-    slug = models.SlugField(unique=True)
+    # 2-letter USPS state/territory abbreviation (e.g. "IL"). Blank for legacy
+    # rows until backfilled by the city seed.
+    state = models.CharField(max_length=2, blank=True)
+    slug = models.SlugField(unique=True, max_length=120)
     lat = models.DecimalField(max_digits=9, decimal_places=6)
     lng = models.DecimalField(max_digits=9, decimal_places=6)
+    population = models.PositiveIntegerField(null=True, blank=True)
     venue_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 

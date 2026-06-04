@@ -10,7 +10,9 @@ export default function CityCard({ city }: CityCardProps) {
   return (
     <Link href={`/city/${city.slug}`} className="card city-card">
       <div className="city-card-top">
-        <div className="city-card-name">{city.name}</div>
+        <div className="city-card-name">
+          {city.name}{city.state ? `, ${city.state}` : ''}
+        </div>
         <ArrowUpRight className="city-card-arrow" size={22} />
       </div>
       <div className="city-card-count">
