@@ -1,0 +1,92 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SECRETS — never commit. (.env holds DB creds, OAuth + AWS keys; secrets/ holds
+# the CloudFront private signing key.)
+# ─────────────────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+secrets/
+backend/secrets/
+**/secrets/
+*credentials*.json
+service-account*.json
+
+# ─── Python / Django ─────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+ENV/
+.Python
+pip-log.txt
+backend/staticfiles/
+backend/media/
+*.sqlite3
+db.sqlite3
+celerybeat-schedule
+celerybeat.pid
+*.pid
+
+# ─── Testing / coverage / type-checking ──────────────────────────────────────
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+
+# ─── Node / Next.js (frontend) ───────────────────────────────────────────────
+node_modules/
+.next/
+out/
+.turbo/
+.vercel/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ─── Docker / logs ───────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─── Editors / IDE ───────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# ─── Agent / tooling state (local only) ──────────────────────────────────────
+.claude/
+.agents/
+.plans/
+
+# Claude skills lockfile (tooling)
+skills-lock.json

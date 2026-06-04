@@ -1,0 +1,69 @@
+version: "3.9"
+
+x-backend-env: &backend-env
+  DJANGO_SETTINGS_MODULE: config.settings.local
+  DB_NAME: ${DB_NAME:-postgres}
+  DB_USER: ${DB_USER}
+  DB_PASSWORD: ${DB_PASSWORD}
+  DB_HOST: ${DB_HOST}
+  DB_PORT: ${DB_PORT:-5432}
+  SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+  REDIS_HOST: redis
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+  AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+  AWS_S3_REGION: ${AWS_S3_REGION:-us-east-1}
+  AWS_CLOUDFRONT_DOMAIN: ${AWS_CLOUDFRONT_DOMAIN:-}
+  AWS_CLOUDFRONT_KEY_PAIR_ID: ${AWS_CLOUDFRONT_KEY_PAIR_ID:-}
+  AWS_CLOUDFRONT_PRIVATE_KEY_FILE: ${AWS_CLOUDFRONT_PRIVATE_KEY_FILE:-}
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      <<: *backend-env
+    depends_on:
+      - redis
+
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    command: celery -A config worker --loglevel=info --concurrency=2
+    volumes:
+      - ./backend:/app
+    environment:
+      <<: *backend-env
+    # Resource caps so a malicious/huge upload can't exhaust the host.
+    mem_limit: 1g
+    cpus: 1.5
+    pids_limit: 256
+    depends_on:
+      - redis
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      API_URL: http://api:8000
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_WS_URL: ws://localhost:8000
+    depends_on:
+      - api
