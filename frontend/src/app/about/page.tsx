@@ -12,7 +12,10 @@ export default function AboutPage() {
       <main>
         <div className="container">
           <div className="page-title-section">
-            <h1 className="section-title">About Nights</h1>
+            <h1 className="section-title">
+              <span>About</span>
+              <span className="accent-line">Nights</span>
+            </h1>
             <DecorativeBorder />
           </div>
           <div style={{ maxWidth: '640px', paddingBottom: '80px' }}>

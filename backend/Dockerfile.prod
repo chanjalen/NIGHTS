@@ -1,0 +1,31 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    libpq-dev gcc ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Collect static assets (Django admin / DRF) at build time so WhiteNoise can
+# serve them. Uses a throwaway SECRET_KEY only to satisfy production.py's startup
+# check — collectstatic never connects to the database.
+RUN SECRET_KEY=build-only-not-used \
+    DJANGO_SETTINGS_MODULE=config.settings.production \
+    python manage.py collectstatic --noinput
+
+# Run as an unprivileged user.
+RUN useradd --create-home --uid 1000 appuser \
+    && chmod +x /app/entrypoint.sh \
+    && chown -R appuser:appuser /app
+USER appuser
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]

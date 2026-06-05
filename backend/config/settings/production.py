@@ -9,7 +9,14 @@ DEBUG = False
 if not os.environ.get("SECRET_KEY"):
     raise ImproperlyConfigured("SECRET_KEY environment variable must be set in production.")
 
+# Must include BOTH the API host (HTTP Host header) AND the frontend host: the
+# chat websocket's AllowedHostsOriginValidator (config/asgi.py) checks the WS
+# Origin — which is the frontend — against this list. e.g.
+# "api.findyournights.com,findyournights.com,www.findyournights.com"
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+
+# allauth builds verification / password-reset links with this scheme.
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 
 CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
 CORS_ALLOW_CREDENTIALS = True
@@ -27,6 +34,10 @@ CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# Caddy already redirects http→https at the edge; this is defense in depth. Safe
+# behind the proxy because SECURE_PROXY_SSL_HEADER lets Django see the real scheme
+# (no redirect loop on Caddy→api internal http traffic).
+SECURE_SSL_REDIRECT = True
 
 # Send real email once SMTP credentials are present; otherwise fall back to the
 # console backend so a misconfigured prod doesn't silently fail signups.

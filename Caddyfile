@@ -1,0 +1,16 @@
+# Caddy edge proxy. Automatic HTTPS (Let's Encrypt) for every site listed below.
+# WebSocket upgrades and the X-Forwarded-Proto header (which Django reads via
+# SECURE_PROXY_SSL_HEADER) are handled by reverse_proxy automatically.
+
+{
+	# Email used for the ACME (Let's Encrypt) account / expiry notices.
+	email admin@findyournights.com
+}
+
+api.findyournights.com {
+	reverse_proxy api:8000
+}
+
+api-dev.findyournights.com {
+	reverse_proxy api-dev:8000
+}

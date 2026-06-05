@@ -1,0 +1,104 @@
+# Production + dev backend stacks on one box, fronted by a single Caddy that
+# terminates TLS (auto Let's Encrypt) and reverse-proxies by subdomain.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Secrets live in .env.prod / .env.dev (chmod 600, gitignored) at the repo root,
+# and the CloudFront signing key under backend/secrets/. Only Caddy publishes
+# ports — api/redis are reachable only on the internal compose network.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - api-dev
+
+  # ── Production (api.findyournights.com → nite-prod DB) ───────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      RUN_MIGRATIONS: "1"
+      REDIS_HOST: redis
+    volumes:
+      - ./backend/secrets:/app/secrets:ro
+    depends_on:
+      - redis
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    command: celery -A config worker --loglevel=info --concurrency=2
+    env_file: .env.prod
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      REDIS_HOST: redis
+    # Resource caps so a malicious/huge upload can't exhaust the host.
+    mem_limit: 1g
+    cpus: 1.5
+    pids_limit: 256
+    volumes:
+      - ./backend/secrets:/app/secrets:ro
+    depends_on:
+      - redis
+
+  # ── Dev / staging (api-dev.findyournights.com → nite-dev DB) ────────────────
+  redis-dev:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  api-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    env_file: .env.dev
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      RUN_MIGRATIONS: "1"
+      REDIS_HOST: redis-dev
+    volumes:
+      - ./backend/secrets:/app/secrets:ro
+    depends_on:
+      - redis-dev
+
+  worker-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    command: celery -A config worker --loglevel=info --concurrency=2
+    env_file: .env.dev
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      REDIS_HOST: redis-dev
+    mem_limit: 1g
+    cpus: 1.5
+    pids_limit: 256
+    volumes:
+      - ./backend/secrets:/app/secrets:ro
+    depends_on:
+      - redis-dev
+
+volumes:
+  caddy_data:
+  caddy_config:

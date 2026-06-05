@@ -79,19 +79,27 @@ export default function CitiesGrid() {
 
   return (
     <>
-      <div style={{ marginBottom: '32px', maxWidth: '480px' }}>
-        <div className="search-input-wrapper">
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search cities..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search cities"
-          />
-          <span className="search-input-icon">
-            <Search size={18} />
-          </span>
+      <div className="page-title-section cities-header">
+        <h1 className="section-title">
+          <span>Popular</span> <span className="accent-line">Cities</span>
+        </h1>
+        <div className="cities-header-aside">
+          <p className="section-subtitle">
+            Choose a city to explore its nightlife scene.
+          </p>
+          <div className="search-input-wrapper">
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search cities..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search cities"
+            />
+            <span className="search-input-icon">
+              <Search size={18} />
+            </span>
+          </div>
         </div>
       </div>
 

@@ -1,0 +1,9 @@
+# Force LF on files that run inside Linux containers, so editing on Windows
+# (CRLF) can't break them. A CRLF entrypoint.sh = container fails to start.
+*.sh        text eol=lf
+entrypoint.sh text eol=lf
+Dockerfile* text eol=lf
+Caddyfile   text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.py        text eol=lf
