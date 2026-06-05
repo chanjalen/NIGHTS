@@ -31,6 +31,13 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
 
+# The SPA (www/apex) and the API live on different subdomains, so cookies must be
+# scoped to the shared parent (e.g. ".findyournights.com") — otherwise the
+# frontend can't read the csrftoken cookie the API sets, and the session cookie
+# isn't shared. Left unset (None) in local dev, where everything is on localhost.
+SESSION_COOKIE_DOMAIN = os.environ.get("SESSION_COOKIE_DOMAIN") or None
+CSRF_COOKIE_DOMAIN = os.environ.get("CSRF_COOKIE_DOMAIN") or None
+
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
