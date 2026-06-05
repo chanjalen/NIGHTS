@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { login, signup, firstError } from '@/lib/auth';
 
 function GoogleLogo() {
   return (
@@ -16,16 +17,20 @@ function GoogleLogo() {
   );
 }
 
-const FEATURES = [
-  { icon: '★', text: 'Rate bars from 1 to 5 stars' },
-  { icon: '⚑', text: 'Check in and see who\'s out tonight' },
-  { icon: '⌖', text: 'Discover the best spots in your city' },
-];
+type Mode = 'login' | 'signup';
 
 export default function SignInPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, refetch } = useAuth();
   const router = useRouter();
   const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+  const [mode, setMode] = useState<Mode>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -34,6 +39,61 @@ export default function SignInPage() {
   }, [user, loading, router]);
 
   if (loading) return null;
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setError('');
+    setNotice('');
+    setConfirm('');
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setNotice('');
+
+    if (mode === 'signup' && password !== confirm) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const res = mode === 'login'
+        ? await login(email, password)
+        : await signup(email, password);
+
+      // Logged in (verified user logging in).
+      if (res.ok && res.body?.meta?.is_authenticated) {
+        refetch();
+        router.replace('/');
+        return;
+      }
+
+      // Accepted but a verification step is pending (401 with a flow).
+      if (res.status === 401) {
+        setNotice(
+          mode === 'signup'
+            ? `Almost there — we sent a verification link to ${email}. Click it, then log in.`
+            : 'Please verify your email first. Check your inbox for the link we sent.'
+        );
+        return;
+      }
+
+      // Email already registered (incl. via Google) — point them to logging in.
+      const taken = res.body?.errors?.some((e: any) => e.code === 'email_taken');
+      if (taken) {
+        setError('That email is already in use. Try logging in instead.');
+        return;
+      }
+
+      setError(firstError(res.body, 'Could not complete that — please try again.'));
+    } catch {
+      setError('Network error — please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <main className="signin-page">
@@ -46,19 +106,72 @@ export default function SignInPage() {
           friends, and find where the night takes you.
         </p>
 
-        <ul className="signin-features">
-          {FEATURES.map((f) => (
-            <li key={f.text} className="signin-feature">
-              <span className="signin-feature-icon">{f.icon}</span>
-              {f.text}
-            </li>
-          ))}
-        </ul>
-
         <a href={`${API}/accounts/google/login/`} className="btn-google-signin">
           <GoogleLogo />
           Continue with Google
         </a>
+
+        <div className="auth-divider"><span>or</span></div>
+
+        <div className="auth-tabs">
+          <button
+            type="button"
+            className={`auth-tab ${mode === 'login' ? 'is-active' : ''}`}
+            onClick={() => switchMode('login')}
+          >
+            Log in
+          </button>
+          <button
+            type="button"
+            className={`auth-tab ${mode === 'signup' ? 'is-active' : ''}`}
+            onClick={() => switchMode('signup')}
+          >
+            Sign up
+          </button>
+        </div>
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <input
+            className="auth-input"
+            type="email"
+            placeholder="Email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            className="auth-input"
+            type="password"
+            placeholder="Password"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          {mode === 'signup' && (
+            <input
+              className="auth-input"
+              type="password"
+              placeholder="Confirm password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+            />
+          )}
+
+          {error && <p className="auth-error">{error}</p>}
+          {notice && <p className="auth-notice">{notice}</p>}
+
+          <button type="submit" className="auth-submit" disabled={busy}>
+            {busy ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
+          </button>
+        </form>
+
+        {mode === 'login' && (
+          <Link href="/forgot-password" className="auth-link">Forgot password?</Link>
+        )}
 
         <p className="signin-terms">
           By continuing, you agree to our terms of service and privacy policy.

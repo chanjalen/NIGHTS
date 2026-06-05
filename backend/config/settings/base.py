@@ -26,6 +26,7 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "allauth",
     "allauth.account",
+    "allauth.headless",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     "channels",
@@ -152,6 +153,18 @@ REST_FRAMEWORK = {
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = "email"
+# One email = one account. Email signups must confirm via a link before they can
+# log in; this also makes auto-linking a Google login to an existing email
+# account safe (see apps/accounts/adapters.py).
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+# Show an explicit "email already in use" error on signup instead of allauth's
+# default behavior (silently emailing the existing owner and faking a
+# "verification sent" success). Tradeoff: this allows account enumeration —
+# someone can probe which emails are registered via the signup form.
+ACCOUNT_PREVENT_ENUMERATION = False
+ACCOUNT_ADAPTER = "apps.accounts.adapters.AccountAdapter"
+SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.SocialAccountAdapter"
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "APP": {
@@ -168,6 +181,26 @@ GOOGLE_PLACES_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# Email verification / password-reset links in allauth emails point at these
+# React pages, which read the {key} and call the headless verify/reset endpoints.
+HEADLESS_FRONTEND_URLS = {
+    "account_confirm_email": f"{FRONTEND_URL}/verify-email/{{key}}",
+    "account_reset_password_from_key": f"{FRONTEND_URL}/reset-password/{{key}}",
+}
+
+# ── Email delivery ───────────────────────────────────────────────────────────
+# Dev default prints emails (incl. verification links) to the API container
+# logs. Set EMAIL_HOST in the environment and production.py switches to SMTP.
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "NITE <no-reply@nite.app>")
 
 ASGI_APPLICATION = "config.asgi.application"
 

@@ -37,21 +37,25 @@ function formatDate(dateStr: string): string {
   }
 }
 
-function RatingCard({ rating }: { rating: Rating }) {
-  const metaParts: string[] = [];
-  if (rating.day_of_week) metaParts.push(rating.day_of_week);
+function formatDayVisited(day: string): string {
+  return `Day Visited: ${day.charAt(0) + day.slice(1).toLowerCase()}`;
+}
 
+function RatingCard({ rating }: { rating: Rating }) {
   return (
     <div className="rating-card">
       <div className="rating-card-header">
-        <div>
-          <div className="rating-user">{rating.user_display_name}</div>
-          {metaParts.length > 0 && (
-            <div className="rating-meta">{metaParts.join(' · ')}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <StarRating value={rating.overall} size={16} />
+          <span className="rating-date">{formatDate(rating.created_at)}</span>
+          {rating.day_of_week && (
+            <span className="rating-meta" style={{ marginTop: 0 }}>
+              {formatDayVisited(rating.day_of_week)}
+            </span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <StarRating value={rating.overall} size={16} />
+          <span className="rating-user">{rating.user_display_name}</span>
           {rating.checkin_verified && (
             <span className="badge-verified">✓ Verified</span>
           )}
@@ -79,14 +83,13 @@ function RatingCard({ rating }: { rating: Rating }) {
         </div>
       )}
 
-      <div className="rating-footer">
-        {rating.would_go_back !== null && (
+      {rating.would_go_back !== null && (
+        <div className="rating-footer">
           <span className={`rating-return ${rating.would_go_back ? 'yes' : 'no'}`}>
             {rating.would_go_back ? '↩ Would return' : '✕ Wouldn\'t return'}
           </span>
-        )}
-        <span className="rating-date">{formatDate(rating.created_at)}</span>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

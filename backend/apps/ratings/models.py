@@ -21,7 +21,10 @@ class Rating(models.Model):
         "venues.Venue", on_delete=models.CASCADE, related_name="ratings"
     )
     user = models.ForeignKey(
-        "accounts.User", on_delete=models.CASCADE, related_name="ratings"
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="ratings",
     )
     overall = models.IntegerField(choices=OVERALL_CHOICES)
     day_of_week = models.CharField(

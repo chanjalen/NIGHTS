@@ -16,6 +16,7 @@ interface ProfileRating {
   venue_name: string;
   city_slug: string;
   city_name: string;
+  city_state: string;
   overall: number;
   day_of_week: string | null;
   music_tags: string[];
@@ -57,6 +58,10 @@ function formatDate(iso: string) {
     month: 'long',
     day: 'numeric',
   });
+}
+
+function formatDayVisited(day: string): string {
+  return `Day Visited: ${day.charAt(0) + day.slice(1).toLowerCase()}`;
 }
 
 export default function ProfilePage() {
@@ -170,23 +175,30 @@ export default function ProfilePage() {
                     <div key={r.id} className="rating-card">
                       <div className="rating-card-header">
                         <div>
-                          <Link
-                            href={`/city/${r.city_slug}/${r.venue_id}?from=profile`}
-                            className="profile-venue-link"
-                          >
-                            {r.venue_name}
-                          </Link>
-                          <div className="rating-meta">
-                            {r.city_name}
-                            {r.day_of_week ? ` · ${r.day_of_week}` : ''}
+                          <div style={{ marginBottom: 8 }}>
+                            <Link
+                              href={`/city/${r.city_slug}/${r.venue_id}?from=profile`}
+                              className="profile-venue-link"
+                            >
+                              {r.venue_name}
+                            </Link>
+                            <span className="rating-meta" style={{ marginTop: 0 }}>
+                              {' - '}{r.city_name}, {r.city_state}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                            <StarRating value={r.overall} size={16} />
+                            <span className="rating-date">{formatDate(r.created_at)}</span>
+                            {r.day_of_week && (
+                              <span className="rating-meta" style={{ marginTop: 0 }}>
+                                {formatDayVisited(r.day_of_week)}
+                              </span>
+                            )}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                          <StarRating value={r.overall} size={16} />
-                          {r.checkin_verified && (
-                            <span className="badge-verified">✓ Verified</span>
-                          )}
-                        </div>
+                        {r.checkin_verified && (
+                          <span className="badge-verified">✓ Verified</span>
+                        )}
                       </div>
 
                       {r.comment && (
@@ -208,14 +220,13 @@ export default function ProfilePage() {
                         </div>
                       )}
 
-                      <div className="rating-footer">
-                        {r.would_go_back !== null && (
+                      {r.would_go_back !== null && (
+                        <div className="rating-footer">
                           <span className={`rating-return ${r.would_go_back ? 'yes' : 'no'}`}>
                             {r.would_go_back ? '↩ Would return' : '✕ Wouldn\'t return'}
                           </span>
-                        )}
-                        <span className="rating-date">{formatDate(r.created_at)}</span>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

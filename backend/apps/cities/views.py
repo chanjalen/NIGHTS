@@ -1,5 +1,5 @@
 from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Case, Count, IntegerField, Q, When
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics
@@ -25,11 +25,23 @@ class CityListView(generics.ListAPIView):
     def get_queryset(self):
         search = self.request.query_params.get("search", "").strip()
         if search:
-            # Fuzzy (trigram) + substring match, ranked by similarity then size.
+            # Rank by match quality (exact > prefix > substring > fuzzy), then by
+            # popularity (venue_count) within each tier. So typing "st" surfaces
+            # St Charles / St Louis (prefix) ahead of Boston/Houston (substring),
+            # with the busiest city first. Trigram still catches typos.
             return (
-                City.objects.annotate(sim=TrigramSimilarity("name", search))
+                City.objects.annotate(
+                    match_rank=Case(
+                        When(name__iexact=search, then=0),
+                        When(name__istartswith=search, then=1),
+                        When(name__icontains=search, then=2),
+                        default=3,
+                        output_field=IntegerField(),
+                    ),
+                    sim=TrigramSimilarity("name", search),
+                )
                 .filter(Q(name__icontains=search) | Q(sim__gt=0.2))
-                .order_by("-sim", "-venue_count")
+                .order_by("match_rank", "-venue_count", "-sim", "name")
             )
         # Default (Popular Cities + ticker): only cities that actually have
         # venues, most first. The full ~19k list is reachable via ?search=.

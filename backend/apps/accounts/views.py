@@ -1,6 +1,8 @@
 from django.db.models import Count
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.generics import RetrieveUpdateAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.ratings.models import Rating, RatingMedia
@@ -9,6 +11,17 @@ from apps.checkins.models import CheckIn
 from apps.saved.models import SavedVenue
 from .models import User
 from .serializers import UserSerializer
+
+
+@method_decorator(ensure_csrf_cookie, name="get")
+class CSRFView(APIView):
+    """Seeds the ``csrftoken`` cookie so the (anonymous) signin page can send
+    the X-CSRFToken header required by the allauth headless POST endpoints."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"detail": "ok"})
 
 
 class MeView(RetrieveUpdateAPIView):
@@ -39,6 +52,7 @@ class ProfileView(APIView):
                 "venue_name": r.venue.name,
                 "city_slug": r.venue.city.slug,
                 "city_name": r.venue.city.name,
+                "city_state": r.venue.city.state,
                 "overall": r.overall,
                 "day_of_week": r.day_of_week,
                 "music_tags": r.music_tags,

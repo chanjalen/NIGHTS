@@ -2,7 +2,7 @@ import Header from '@/components/Header';
 import DecorativeBorder from '@/components/DecorativeBorder';
 
 export const metadata = {
-  title: 'About — NITE',
+  title: 'About — Nights',
 };
 
 export default function AboutPage() {
@@ -17,17 +17,13 @@ export default function AboutPage() {
           </div>
           <div style={{ maxWidth: '640px', paddingBottom: '80px' }}>
             <p style={{ color: 'var(--text-dim)', fontSize: '16px', lineHeight: '1.75', marginBottom: '20px' }}>
-              NITE is a city-first bar and nightlife discovery platform — think
-              Rate My Professors, but for the places you actually want to spend
-              your nights.
+              Nights is a city-first bar and nightlife discovery platform — Search the city you want to explore, then find a venue that fits your vibe.
             </p>
             <p style={{ color: 'var(--text-dim)', fontSize: '16px', lineHeight: '1.75', marginBottom: '20px' }}>
-              Every rating on NITE is tied to a real visit. We verify check-ins
-              so you know exactly which reviews come from people who were
-              actually there.
+              Every rating on Nights is tied to a real person. Verified check-ins come from users that went to THAT venue. Check-in live and chat with everyone else who's also there with you!
             </p>
             <p style={{ color: 'var(--text-dim)', fontSize: '16px', lineHeight: '1.75' }}>
-              Find your night.
+              Find your nights.
             </p>
           </div>
         </div>

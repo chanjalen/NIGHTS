@@ -20,12 +20,8 @@ class RatingMediaSerializer(serializers.ModelSerializer):
 
 
 class RatingSerializer(serializers.ModelSerializer):
-    user_display_name = serializers.CharField(
-        source="user.display_name", read_only=True
-    )
-    user_avatar_url = serializers.URLField(
-        source="user.avatar_url", read_only=True
-    )
+    user_display_name = serializers.SerializerMethodField()
+    user_avatar_url = serializers.SerializerMethodField()
     venue = serializers.PrimaryKeyRelatedField(queryset=Venue.objects.all())
     media = serializers.SerializerMethodField()
     media_keys = serializers.ListField(
@@ -63,6 +59,13 @@ class RatingSerializer(serializers.ModelSerializer):
             "checkin_verified",
             "created_at",
         ]
+
+    def get_user_display_name(self, obj):
+        # Author may be null if they deleted their account; the rating survives.
+        return obj.user.display_name if obj.user else "Anonymous"
+
+    def get_user_avatar_url(self, obj):
+        return obj.user.avatar_url if obj.user else ""
 
     def get_media(self, obj):
         # Only surface visible media (hide processing/removed).
