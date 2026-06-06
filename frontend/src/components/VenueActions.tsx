@@ -11,6 +11,7 @@ import {
   validateFile,
   videoDuration,
   uploadMedia,
+  videoFrameToImage,
   type MediaKind,
 } from '@/lib/upload';
 
@@ -82,7 +83,7 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const addFiles = async (fileList: FileList | null) => {
+  const addFiles = async (fileList: FileList | null, forceImage = false) => {
     if (!fileList) return;
     setError('');
     const incoming = Array.from(fileList);
@@ -91,7 +92,12 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
       return;
     }
     const next: LocalMedia[] = [];
-    for (const file of incoming) {
+    for (let file of incoming) {
+      // Photo button: iOS may hand us a Live Photo's .mov — render a still frame.
+      if (forceImage && kindOf(file) === 'video') {
+        try { file = await videoFrameToImage(file); }
+        catch { setError('Could not read that photo.'); return; }
+      }
       const err = validateFile(file);
       if (err) { setError(err); return; }
       const kind = kindOf(file)!;
@@ -604,8 +610,9 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
                   </div>
                 )}
                 {media.length < MAX_FILES && (
-                  // Separate photo/video pickers: accept="image/*" makes iOS
-                  // deliver the still JPEG from a Live Photo instead of its .mov.
+                  // Separate photo/video pickers. The photo picker forces an
+                  // image: if iOS hands us a Live Photo's .mov anyway, addFiles
+                  // renders a still frame from it.
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <label className="media-add-btn">
                       + Add photo
@@ -615,7 +622,7 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
                         multiple
                         hidden
                         onChange={(e) => {
-                          addFiles(e.target.files);
+                          addFiles(e.target.files, true);
                           e.target.value = '';
                         }}
                       />

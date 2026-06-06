@@ -10,6 +10,7 @@ import {
   validateFile,
   videoDuration,
   uploadMedia,
+  videoFrameToImage,
   CHAT_MAX_VIDEO_BYTES,
   CHAT_MAX_VIDEO_SECONDS,
 } from '@/lib/upload';
@@ -162,10 +163,15 @@ export default function ChatPage() {
     if (videoRef.current) videoRef.current.value = '';
   };
 
-  const onPickFile = async (fileList: FileList | null) => {
+  const onPickFile = async (fileList: FileList | null, forceImage = false) => {
     setMediaError('');
-    const file = fileList?.[0];
+    let file = fileList?.[0];
     if (!file) return;
+    // Photo button: iOS may hand us a Live Photo's .mov — render a still frame.
+    if (forceImage && kindOf(file) === 'video') {
+      try { file = await videoFrameToImage(file); }
+      catch { setMediaError('Could not read that photo.'); return; }
+    }
     const err = validateFile(file, { maxVideoBytes: CHAT_MAX_VIDEO_BYTES });
     if (err) {
       setMediaError(err);
@@ -344,14 +350,15 @@ export default function ChatPage() {
       )}
 
       <div className="chat-input-bar">
-        {/* Separate photo/video pickers: accept="image/*" makes iOS deliver the
-            still JPEG from a Live Photo instead of its .mov. */}
+        {/* Separate photo/video pickers. The photo picker forces an image: if
+            iOS hands us a Live Photo's .mov anyway, onPickFile renders a still
+            frame from it. */}
         <input
           ref={fileRef}
           type="file"
           accept="image/*"
           hidden
-          onChange={(e) => onPickFile(e.target.files)}
+          onChange={(e) => onPickFile(e.target.files, true)}
         />
         <input
           ref={videoRef}
