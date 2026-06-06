@@ -46,8 +46,7 @@ export interface RatingMedia {
 
 export interface Rating {
   id: string;
-  user_display_name: string;
-  user_avatar_url: string | null;
+  is_own: boolean;
   overall: number;
   day_of_week: string | null;
   price_level: 1 | 2 | 3 | 4 | null;

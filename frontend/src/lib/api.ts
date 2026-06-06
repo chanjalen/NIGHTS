@@ -94,10 +94,15 @@ export async function getVenue(id: string): Promise<VenueDetail> {
 }
 
 export async function getRatings(venueId: string): Promise<Rating[]> {
-  const res = await fetch(
-    `${BASE_URL}/api/v1/ratings/?venue=${venueId}`,
-    defaultOptions
-  );
+  // Forward the caller's session cookie so the API can flag the user's own
+  // rating (is_own). Ratings are otherwise anonymous. Server-only import:
+  // getRatings is called from server components.
+  const { cookies } = await import('next/headers');
+  const cookieHeader = cookies().toString();
+  const res = await fetch(`${BASE_URL}/api/v1/ratings/?venue=${venueId}`, {
+    ...defaultOptions,
+    headers: cookieHeader ? { Cookie: cookieHeader } : {},
+  });
   if (!res.ok) throw new Error(`Failed to fetch ratings: ${res.status}`);
   return unwrap<Rating>(await res.json());
 }

@@ -1102,6 +1102,22 @@ textarea {
   margin-bottom: 12px;
 }
 
+.rating-card.is-own {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 18px var(--accent-glow);
+}
+
+.rating-own-badge {
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-glow);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
 .rating-user {
   font-weight: 700;
   font-size: 15px;

@@ -20,8 +20,9 @@ class RatingMediaSerializer(serializers.ModelSerializer):
 
 
 class RatingSerializer(serializers.ModelSerializer):
-    user_display_name = serializers.SerializerMethodField()
-    user_avatar_url = serializers.SerializerMethodField()
+    # Ratings are anonymous: the author is never exposed. `is_own` only tells
+    # the requesting user which rating is theirs (for highlighting).
+    is_own = serializers.SerializerMethodField()
     venue = serializers.PrimaryKeyRelatedField(queryset=Venue.objects.all())
     media = serializers.SerializerMethodField()
     media_keys = serializers.ListField(
@@ -36,8 +37,7 @@ class RatingSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "venue",
-            "user_display_name",
-            "user_avatar_url",
+            "is_own",
             "overall",
             "day_of_week",
             "price_level",
@@ -54,18 +54,15 @@ class RatingSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
-            "user_display_name",
-            "user_avatar_url",
+            "is_own",
             "checkin_verified",
             "created_at",
         ]
 
-    def get_user_display_name(self, obj):
-        # Author may be null if they deleted their account; the rating survives.
-        return obj.user.display_name if obj.user else "Anonymous"
-
-    def get_user_avatar_url(self, obj):
-        return obj.user.avatar_url if obj.user else ""
+    def get_is_own(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        return bool(user and user.is_authenticated and obj.user_id == user.id)
 
     def get_media(self, obj):
         # Only surface visible media (hide processing/removed).

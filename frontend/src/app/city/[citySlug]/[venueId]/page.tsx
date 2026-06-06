@@ -43,7 +43,7 @@ function formatDayVisited(day: string): string {
 
 function RatingCard({ rating }: { rating: Rating }) {
   return (
-    <div className="rating-card">
+    <div className={`rating-card${rating.is_own ? ' is-own' : ''}`}>
       <div className="rating-card-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <StarRating value={rating.overall} size={16} />
@@ -55,7 +55,7 @@ function RatingCard({ rating }: { rating: Rating }) {
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <span className="rating-user">{rating.user_display_name}</span>
+          {rating.is_own && <span className="rating-own-badge">Your review</span>}
           {rating.checkin_verified && (
             <span className="badge-verified">✓ Verified</span>
           )}
