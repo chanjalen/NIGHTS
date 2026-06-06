@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 
 from . import s3
-from .models import MediaReport, Rating, RatingMedia
+from .models import MediaReport, Rating, RatingMedia, RatingReport
 
 
 def _remove_media(media: RatingMedia) -> None:
@@ -60,5 +60,28 @@ class MediaReportAdmin(admin.ModelAdmin):
         self.message_user(request, "Reported media removed and reports resolved.")
 
     @admin.action(description="Mark resolved (keep media)")
+    def mark_resolved(self, request, queryset):
+        queryset.update(resolved=True)
+
+
+@admin.register(RatingReport)
+class RatingReportAdmin(admin.ModelAdmin):
+    list_display = ("id", "rating", "reporter", "reason", "resolved", "created_at")
+    list_filter = ("resolved", "created_at")
+    search_fields = ("rating__id", "rating__comment", "reason", "reporter__email")
+    actions = ["delete_reported_rating", "mark_resolved"]
+
+    @admin.action(description="Delete reported review + resolve")
+    def delete_reported_rating(self, request, queryset):
+        count = 0
+        for report in queryset.select_related("rating"):
+            if report.rating_id:
+                report.rating.delete()
+                count += 1
+        # Reports for deleted reviews cascade away; resolve any remaining.
+        queryset.filter(rating__isnull=False).update(resolved=True)
+        self.message_user(request, f"Deleted {count} reported review(s).")
+
+    @admin.action(description="Mark resolved (keep review)")
     def mark_resolved(self, request, queryset):
         queryset.update(resolved=True)

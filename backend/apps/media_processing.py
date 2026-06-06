@@ -30,10 +30,19 @@ Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
 FFMPEG_PROTOCOLS = "file,crypto"
 
 
+# Formats that carry real animation and should become an MP4. MPO and other
+# multi-frame *stills* must be excluded: iPhone HDR photos bundle a gain-map as
+# a 2nd frame (format "MPO", n_frames=2), and without this guard an ordinary
+# photo gets misclassified as animated and transcoded into a video.
+ANIMATED_FORMATS = {"GIF", "PNG", "WEBP"}
+
+
 def is_animated(src_path: str) -> bool:
-    """True for a multi-frame image (e.g. an animated GIF)."""
+    """True only for genuinely animated images (e.g. an animated GIF)."""
     try:
         with Image.open(src_path) as im:
+            if im.format not in ANIMATED_FORMATS:
+                return False
             return getattr(im, "is_animated", False) and getattr(im, "n_frames", 1) > 1
     except Exception:  # noqa: BLE001
         return False

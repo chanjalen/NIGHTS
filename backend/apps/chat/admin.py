@@ -1,7 +1,12 @@
 from django.contrib import admin
 
 from apps.ratings import s3
-from .models import MessageMedia, MessageMediaReport, VenueMessage
+from .models import (
+    MessageMedia,
+    MessageMediaReport,
+    VenueMessage,
+    VenueMessageReport,
+)
 
 
 def _remove_media(media: MessageMedia) -> None:
@@ -51,5 +56,28 @@ class MessageMediaReportAdmin(admin.ModelAdmin):
         self.message_user(request, "Reported media removed and reports resolved.")
 
     @admin.action(description="Mark resolved (keep media)")
+    def mark_resolved(self, request, queryset):
+        queryset.update(resolved=True)
+
+
+@admin.register(VenueMessageReport)
+class VenueMessageReportAdmin(admin.ModelAdmin):
+    list_display = ["id", "message", "reporter", "reason", "resolved", "created_at"]
+    list_filter = ["resolved", "created_at"]
+    search_fields = ["message__id", "message__text", "reason", "reporter__email"]
+    actions = ["delete_reported_message", "mark_resolved"]
+
+    @admin.action(description="Delete reported message + resolve")
+    def delete_reported_message(self, request, queryset):
+        count = 0
+        for report in queryset.select_related("message"):
+            if report.message_id:
+                report.message.delete()
+                count += 1
+        # Reports for deleted messages are cascade-deleted; resolve any remaining.
+        queryset.filter(message__isnull=False).update(resolved=True)
+        self.message_user(request, f"Deleted {count} reported message(s).")
+
+    @admin.action(description="Mark resolved (keep message)")
     def mark_resolved(self, request, queryset):
         queryset.update(resolved=True)

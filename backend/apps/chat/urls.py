@@ -8,4 +8,9 @@ urlpatterns = [
         views.MessageMediaReportView.as_view(),
         name="chat-media-report",
     ),
+    path(
+        "messages/<uuid:message_id>/report/",
+        views.VenueMessageReportView.as_view(),
+        name="chat-message-report",
+    ),
 ]

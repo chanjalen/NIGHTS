@@ -11,7 +11,6 @@ import {
   validateFile,
   videoDuration,
   uploadMedia,
-  videoFrameToImage,
   type MediaKind,
 } from '@/lib/upload';
 
@@ -81,37 +80,18 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
   const [media, setMedia] = useState<LocalMedia[]>([]);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [error, setError] = useState('');
-  const [debug, setDebug] = useState(''); // TEMP DEBUG
   const [submitting, setSubmitting] = useState(false);
 
-  const addFiles = async (fileList: FileList | null, forceImage = false) => {
+  const addFiles = async (fileList: FileList | null) => {
     if (!fileList) return;
     setError('');
     const incoming = Array.from(fileList);
-    // TEMP DEBUG: show exactly what iOS handed us for the first file.
-    const f0 = incoming[0];
-    setDebug(
-      f0
-        ? `btn=${forceImage ? 'PHOTO' : 'VIDEO'} type="${f0.type}" name="${f0.name}" kind=${kindOf(f0)}`
-        : 'no file',
-    );
     if (media.length + incoming.length > MAX_FILES) {
       setError(`You can attach at most ${MAX_FILES} files.`);
       return;
     }
     const next: LocalMedia[] = [];
-    for (let file of incoming) {
-      // Photo button: iOS may hand us a Live Photo's .mov — render a still frame.
-      if (forceImage && kindOf(file) === 'video') {
-        try {
-          file = await videoFrameToImage(file);
-          setDebug((d) => `${d} → converted to ${file.type}`);
-        } catch (e) {
-          setDebug((d) => `${d} → CONVERT FAILED: ${e instanceof Error ? e.message : e}`);
-          setError('Could not read that photo.');
-          return;
-        }
-      }
+    for (const file of incoming) {
       const err = validateFile(file);
       if (err) { setError(err); return; }
       const kind = kindOf(file)!;
@@ -624,46 +604,23 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
                   </div>
                 )}
                 {media.length < MAX_FILES && (
-                  // Separate photo/video pickers. The photo picker forces an
-                  // image: if iOS hands us a Live Photo's .mov anyway, addFiles
-                  // renders a still frame from it.
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <label className="media-add-btn">
-                      + Add photo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        hidden
-                        onChange={(e) => {
-                          addFiles(e.target.files, true);
-                          e.target.value = '';
-                        }}
-                      />
-                    </label>
-                    <label className="media-add-btn">
-                      + Add video
-                      <input
-                        type="file"
-                        accept="video/*"
-                        multiple
-                        hidden
-                        onChange={(e) => {
-                          addFiles(e.target.files);
-                          e.target.value = '';
-                        }}
-                      />
-                    </label>
-                  </div>
+                  <label className="media-add-btn">
+                    + Add photos or videos
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      hidden
+                      onChange={(e) => {
+                        addFiles(e.target.files);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
                 )}
                 <div className="rf-char">
                   {media.length} / {MAX_FILES} · videos up to {MAX_VIDEO_SECONDS}s
                 </div>
-                {debug && (
-                  <p style={{ fontSize: 11, color: '#ffb000', wordBreak: 'break-all', marginTop: 6 }}>
-                    DEBUG: {debug}
-                  </p>
-                )}
               </div>
 
               {error && <p className="rf-error">{error}</p>}

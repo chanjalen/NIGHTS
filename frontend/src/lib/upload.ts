@@ -65,51 +65,6 @@ export function videoDuration(file: File): Promise<number> {
   });
 }
 
-// Render a still JPEG from a video file. iOS hands the photo picker a Live
-// Photo's .mov even when the input is image-only, so we grab a frame and treat
-// it as the photo. Returns a new image/jpeg File.
-export function videoFrameToImage(file: File): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const el = document.createElement('video');
-    el.preload = 'metadata';
-    el.muted = true;
-    el.playsInline = true;
-    const cleanup = () => URL.revokeObjectURL(el.src);
-    const capture = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = el.videoWidth;
-        canvas.height = el.videoHeight;
-        const ctx = canvas.getContext('2d');
-        if (!ctx || !canvas.width || !canvas.height) throw new Error('no frame');
-        ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(
-          (blob) => {
-            cleanup();
-            if (!blob) { reject(new Error('Could not read photo')); return; }
-            const name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
-            resolve(new File([blob], name, { type: 'image/jpeg' }));
-          },
-          'image/jpeg',
-          0.9,
-        );
-      } catch {
-        cleanup();
-        reject(new Error('Could not read photo'));
-      }
-    };
-    el.onloadeddata = () => {
-      // Seek slightly in to avoid a black/blank first frame. Seeking to 0 won't
-      // fire 'seeked', so capture immediately in that case.
-      const target = el.duration ? Math.min(0.1, el.duration / 2) : 0;
-      if (target > 0) { el.onseeked = capture; el.currentTime = target; }
-      else capture();
-    };
-    el.onerror = () => { cleanup(); reject(new Error('Could not read photo')); };
-    el.src = URL.createObjectURL(file);
-  });
-}
-
 /** Validate a single file by type/size. Returns an error string or null. */
 export function validateFile(
   file: File,

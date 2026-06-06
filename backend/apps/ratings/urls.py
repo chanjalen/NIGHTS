@@ -9,4 +9,9 @@ urlpatterns = [
         views.MediaReportView.as_view(),
         name="media-report",
     ),
+    path(
+        "<uuid:rating_id>/report/",
+        views.RatingReportView.as_view(),
+        name="rating-report",
+    ),
 ]

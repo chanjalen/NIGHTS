@@ -3,14 +3,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Send, Image as ImageIcon, Video, X, Flag } from 'lucide-react';
+import { ArrowLeft, Send, Paperclip, X, Flag } from 'lucide-react';
 import { useAuth, getCsrfToken } from '@/contexts/AuthContext';
 import {
   kindOf,
   validateFile,
   videoDuration,
   uploadMedia,
-  videoFrameToImage,
   CHAT_MAX_VIDEO_BYTES,
   CHAT_MAX_VIDEO_SECONDS,
 } from '@/lib/upload';
@@ -58,6 +57,7 @@ export default function ChatPage() {
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [mediaError, setMediaError] = useState('');
   const [reported, setReported] = useState<Record<string, boolean>>({});
+  const [reportedMsg, setReportedMsg] = useState<Record<string, boolean>>({});
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectDelay = useRef(1000);
@@ -65,7 +65,6 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -160,18 +159,12 @@ export default function ChatPage() {
     });
     setAttachedFile(null);
     if (fileRef.current) fileRef.current.value = '';
-    if (videoRef.current) videoRef.current.value = '';
   };
 
-  const onPickFile = async (fileList: FileList | null, forceImage = false) => {
+  const onPickFile = async (fileList: FileList | null) => {
     setMediaError('');
-    let file = fileList?.[0];
+    const file = fileList?.[0];
     if (!file) return;
-    // Photo button: iOS may hand us a Live Photo's .mov — render a still frame.
-    if (forceImage && kindOf(file) === 'video') {
-      try { file = await videoFrameToImage(file); }
-      catch { setMediaError('Could not read that photo.'); return; }
-    }
     const err = validateFile(file, { maxVideoBytes: CHAT_MAX_VIDEO_BYTES });
     if (err) {
       setMediaError(err);
@@ -240,6 +233,22 @@ export default function ChatPage() {
         body: JSON.stringify({}),
       });
       if (res.ok) setReported((r) => ({ ...r, [mediaId]: true }));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const reportMessage = async (messageId: string) => {
+    if (reportedMsg[messageId]) return;
+    if (!confirm('Report this message?')) return;
+    try {
+      const res = await fetch(`${API}/api/v1/chat/messages/${messageId}/report/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({}),
+      });
+      if (res.ok) setReportedMsg((r) => ({ ...r, [messageId]: true }));
     } catch {
       /* ignore */
     }
@@ -321,7 +330,20 @@ export default function ChatPage() {
                 {msg.text && (
                   <div className={`chat-bubble${isMe ? ' mine' : ''}`}>{msg.text}</div>
                 )}
-                <span className="chat-time">{formatTime(msg.created_at)}</span>
+                <div className="chat-meta">
+                  <span className="chat-time">{formatTime(msg.created_at)}</span>
+                  {!isMe && (
+                    <button
+                      type="button"
+                      className="chat-msg-report"
+                      onClick={() => reportMessage(msg.id)}
+                      title={reportedMsg[msg.id] ? 'Reported' : 'Report message'}
+                      aria-label="Report message"
+                    >
+                      <Flag size={11} fill={reportedMsg[msg.id] ? 'currentColor' : 'none'} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -350,20 +372,10 @@ export default function ChatPage() {
       )}
 
       <div className="chat-input-bar">
-        {/* Separate photo/video pickers. The photo picker forces an image: if
-            iOS hands us a Live Photo's .mov anyway, onPickFile renders a still
-            frame from it. */}
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
-          hidden
-          onChange={(e) => onPickFile(e.target.files, true)}
-        />
-        <input
-          ref={videoRef}
-          type="file"
-          accept="video/*"
+          accept="image/*,video/*"
           hidden
           onChange={(e) => onPickFile(e.target.files)}
         />
@@ -371,17 +383,9 @@ export default function ChatPage() {
           className="chat-attach-btn"
           onClick={() => fileRef.current?.click()}
           disabled={!connected || sending || !!attachedFile}
-          aria-label="Attach photo"
+          aria-label="Attach photo or video"
         >
-          <ImageIcon size={18} />
-        </button>
-        <button
-          className="chat-attach-btn"
-          onClick={() => videoRef.current?.click()}
-          disabled={!connected || sending || !!attachedFile}
-          aria-label="Attach video"
-        >
-          <Video size={18} />
+          <Paperclip size={18} />
         </button>
         <textarea
           ref={inputRef}

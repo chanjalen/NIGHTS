@@ -7,6 +7,7 @@ import PriceLevel from '@/components/PriceLevel';
 import VenueActions from '@/components/VenueActions';
 import CleanUrl from '@/components/CleanUrl';
 import RatingMediaGallery from '@/components/RatingMediaGallery';
+import RatingReportButton from '@/components/RatingReportButton';
 import { getVenue, getRatings } from '@/lib/api';
 import { Rating } from '@/types';
 
@@ -59,6 +60,7 @@ function RatingCard({ rating }: { rating: Rating }) {
           {rating.checkin_verified && (
             <span className="badge-verified">✓ Verified</span>
           )}
+          {!rating.is_own && <RatingReportButton ratingId={rating.id} />}
         </div>
       </div>
 

@@ -7,7 +7,12 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from apps.checkins.models import CheckIn
 from apps.common import parse_uuid
-from .models import MessageMedia, MessageMediaReport, VenueMessage
+from .models import (
+    MessageMedia,
+    MessageMediaReport,
+    VenueMessage,
+    VenueMessageReport,
+)
 from .serializers import VenueMessageSerializer
 
 
@@ -63,5 +68,20 @@ class MessageMediaReportView(APIView):
             media=media,
             reporter=request.user,
             reason=str(request.data.get("reason", ""))[:280],
+        )
+        return Response({"reported": True}, status=status.HTTP_201_CREATED)
+
+
+class VenueMessageReportView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "media_report"
+
+    def post(self, request, message_id):
+        message = get_object_or_404(VenueMessage, id=message_id)
+        VenueMessageReport.objects.get_or_create(
+            message=message,
+            reporter=request.user,
+            defaults={"reason": str(request.data.get("reason", ""))[:280]},
         )
         return Response({"reported": True}, status=status.HTTP_201_CREATED)
