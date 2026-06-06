@@ -23,9 +23,11 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  // Resize the layout when the on-screen keyboard opens (Android) so full-height
-  // views like chat shrink to fit instead of being hidden behind the keyboard.
-  interactiveWidget: 'resizes-content',
+  // NOTE: intentionally NOT setting interactiveWidget. The default
+  // ('resizes-visual') keeps the layout viewport full-height and only shrinks the
+  // *visual* viewport for the keyboard — which is exactly what the chat page's
+  // visualViewport sizing relies on. Forcing 'resizes-content' double-applies the
+  // shrink and leaves a dead gap between the input bar and the keyboard.
 };
 
 export default function RootLayout({
