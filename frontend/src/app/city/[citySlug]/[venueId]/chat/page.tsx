@@ -61,12 +61,16 @@ export default function ChatPage() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectDelay = useRef(1000);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Scroll only the message list — NOT scrollIntoView, which on iOS Safari also
+  // scrolls the whole document/window (that's what made the page "start scrolled
+  // up" and jump when the keyboard opened).
   const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = messagesRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, []);
 
   useEffect(() => {
@@ -75,20 +79,26 @@ export default function ChatPage() {
 
   // Size the chat to the *visual* viewport so the on-screen keyboard doesn't
   // cover the input bar / messages. visualViewport.height shrinks when the
-  // keyboard opens; --app-height drives .chat-page's height in CSS. (iOS ignores
-  // the viewport `interactiveWidget` hint, so it relies on this.)
+  // keyboard opens (--app-height), and offsetTop tracks any shift (--app-top),
+  // so the fixed-position chat overlays exactly the visible area. iOS ignores the
+  // viewport `interactiveWidget` hint, so it relies on this.
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const apply = () => {
-      document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
-      scrollToBottom();
+    const de = document.documentElement;
+    const setVars = () => {
+      de.style.setProperty('--app-height', `${vv.height}px`);
+      de.style.setProperty('--app-top', `${vv.offsetTop}px`);
     };
-    apply();
-    vv.addEventListener('resize', apply);
+    const onResize = () => { setVars(); scrollToBottom(); };
+    setVars();
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', setVars);
     return () => {
-      vv.removeEventListener('resize', apply);
-      document.documentElement.style.removeProperty('--app-height');
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', setVars);
+      de.style.removeProperty('--app-height');
+      de.style.removeProperty('--app-top');
     };
   }, [scrollToBottom]);
 
@@ -296,7 +306,7 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <div className="chat-messages">
+      <div className="chat-messages" ref={messagesRef}>
         {messages.length === 0 && connected && (
           <div className="chat-empty">No messages yet — say something!</div>
         )}
@@ -333,7 +343,6 @@ export default function ChatPage() {
             </div>
           );
         })}
-        <div ref={bottomRef} />
       </div>
 
       {(attachedPreview || mediaError || uploadPct !== null) && (

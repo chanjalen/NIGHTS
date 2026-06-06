@@ -2959,6 +2959,14 @@ video {
    browsers without visualViewport. */
 @media (max-width: 640px) {
   .chat-page {
+    /* Pin to the visible viewport so the document itself never scrolls — only the
+       message list scrolls internally. This is what stops the page from "starting
+       scrolled up" and from jumping when the keyboard opens. top/height track the
+       visual viewport (set in JS) so the chat hugs the area above the keyboard. */
+    position: fixed;
+    top: var(--app-top, 0px);
+    left: 0;
+    right: 0;
     height: var(--app-height, 100dvh);
   }
 }
