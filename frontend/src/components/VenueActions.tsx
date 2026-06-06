@@ -81,12 +81,20 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
   const [media, setMedia] = useState<LocalMedia[]>([]);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [error, setError] = useState('');
+  const [debug, setDebug] = useState(''); // TEMP DEBUG
   const [submitting, setSubmitting] = useState(false);
 
   const addFiles = async (fileList: FileList | null, forceImage = false) => {
     if (!fileList) return;
     setError('');
     const incoming = Array.from(fileList);
+    // TEMP DEBUG: show exactly what iOS handed us for the first file.
+    const f0 = incoming[0];
+    setDebug(
+      f0
+        ? `btn=${forceImage ? 'PHOTO' : 'VIDEO'} type="${f0.type}" name="${f0.name}" kind=${kindOf(f0)}`
+        : 'no file',
+    );
     if (media.length + incoming.length > MAX_FILES) {
       setError(`You can attach at most ${MAX_FILES} files.`);
       return;
@@ -95,8 +103,14 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
     for (let file of incoming) {
       // Photo button: iOS may hand us a Live Photo's .mov — render a still frame.
       if (forceImage && kindOf(file) === 'video') {
-        try { file = await videoFrameToImage(file); }
-        catch { setError('Could not read that photo.'); return; }
+        try {
+          file = await videoFrameToImage(file);
+          setDebug((d) => `${d} → converted to ${file.type}`);
+        } catch (e) {
+          setDebug((d) => `${d} → CONVERT FAILED: ${e instanceof Error ? e.message : e}`);
+          setError('Could not read that photo.');
+          return;
+        }
       }
       const err = validateFile(file);
       if (err) { setError(err); return; }
@@ -645,6 +659,11 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
                 <div className="rf-char">
                   {media.length} / {MAX_FILES} · videos up to {MAX_VIDEO_SECONDS}s
                 </div>
+                {debug && (
+                  <p style={{ fontSize: 11, color: '#ffb000', wordBreak: 'break-all', marginTop: 6 }}>
+                    DEBUG: {debug}
+                  </p>
+                )}
               </div>
 
               {error && <p className="rf-error">{error}</p>}
