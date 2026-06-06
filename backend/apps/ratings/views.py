@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.analytics import track
 from apps.checkins.models import CheckIn
 from apps.common import parse_uuid
 from . import s3
@@ -140,6 +141,13 @@ class MediaPresignView(APIView):
                     "content_type": content_type,
                 }
             )
+        # Cost signal: each presign can become an S3 PUT + ongoing CloudFront
+        # egress. Tracking issuance lets you watch upload volume by purpose.
+        track(
+            request.user.id,
+            "media_presigned",
+            {"count": len(uploads), "purpose": "chat" if chat else "review"},
+        )
         return Response({"uploads": uploads})
 
 

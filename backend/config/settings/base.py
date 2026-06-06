@@ -45,6 +45,8 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    # First in the list so it wraps the full stack and times the whole request.
+    "apps.analytics.RequestMetricsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     # Serves collected static files (Django admin/DRF) directly from the app —
     # no separate web server needed. Must sit right after SecurityMiddleware.
@@ -275,3 +277,27 @@ CELERY_BROKER_URL = os.environ.get(
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
+# ── Analytics ─────────────────────────────────────────────────────────────────
+# Server-side PostHog (cost-event tracking via apps.analytics.track). Unset =
+# tracking disabled. Same project as the frontend NEXT_PUBLIC_POSTHOG_KEY.
+POSTHOG_API_KEY = os.environ.get("POSTHOG_API_KEY", "")
+POSTHOG_HOST = os.environ.get("POSTHOG_HOST", "https://us.i.posthog.com")
+
+# Emit the per-request metrics line (apps.analytics.RequestMetricsMiddleware) to
+# stdout, where the process manager captures it. Other loggers keep Django's
+# defaults.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {"class": "logging.StreamHandler"},
+    },
+    "loggers": {
+        "analytics.requests": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

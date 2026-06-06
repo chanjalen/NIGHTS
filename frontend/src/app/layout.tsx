@@ -3,6 +3,7 @@ import { Bricolage_Grotesque } from 'next/font/google';
 import './globals.css';
 import FluidBackground from '@/components/FluidBackground';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { PostHogProvider } from '@/components/PostHogProvider';
 
 // Single type family across the whole UI. Variable font (weights 200–800), so
 // we omit `weight` to load the full axis. Exposed as --font-display; globals.css
@@ -39,7 +40,9 @@ export default function RootLayout({
     <html lang="en" className={bricolage.variable}>
       <body>
         <FluidBackground />
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <PostHogProvider>{children}</PostHogProvider>
+        </AuthProvider>
       </body>
     </html>
   );

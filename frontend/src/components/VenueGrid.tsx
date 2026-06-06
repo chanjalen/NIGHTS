@@ -7,6 +7,7 @@ import DecorativeBorder from './DecorativeBorder';
 import RequestVenueForm from './RequestVenueForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildVenueQuery, type VenueFilters, type CityStats } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import type { Venue } from '@/types';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -103,6 +104,14 @@ export default function VenueGrid({
         setVenues(data.results ?? []);
         setCount(data.count ?? 0);
         setPage(1);
+        // result_count: 0 on a real query = demand signal for venues/cities to seed.
+        if (filters.search?.trim()) {
+          track('search_performed', {
+            query: filters.search.trim(),
+            city_slug: citySlug,
+            result_count: data.count ?? 0,
+          });
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

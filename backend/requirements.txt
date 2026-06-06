@@ -20,3 +20,4 @@ boto3==1.34.122
 celery==5.4.0
 ffmpeg-python==0.2.0
 pillow-heif==0.16.0
+posthog==3.7.0

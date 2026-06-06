@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth, login, getCsrfToken } from '@/contexts/AuthContext';
+import { track } from '@/lib/analytics';
 import {
   MAX_FILES,
   MAX_VIDEO_SECONDS,
@@ -188,6 +189,7 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
         body: JSON.stringify({ venue: venueId }),
       });
       if (res.ok) {
+        track('checkin_created', { venue_id: venueId, city_slug: citySlug });
         setCheckedIn(true);
         router.refresh();
       }
@@ -320,6 +322,11 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
       if (res.ok) {
         const created = await res.json().catch(() => null);
         const mediaCount = (body.media_keys as string[] | undefined)?.length ?? 0;
+        track('rating_submitted', {
+          venue_id: venueId,
+          stars: overall,
+          has_media: mediaCount > 0,
+        });
         media.forEach((m) => URL.revokeObjectURL(m.url));
         setMedia([]);
         setSubmitted(true);
