@@ -301,3 +301,22 @@ LOGGING = {
         },
     },
 }
+
+# ── Sentry (errors + performance tracing) ─────────────────────────────────────
+# Auto-instruments Django (request transactions + DB query spans) and Celery.
+# Unset DSN = disabled, so local/dev and un-configured prod are unaffected.
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        # Fraction of requests traced for performance (latency + slow-query spans).
+        # 0.1 = 10% — plenty to surface slow endpoints without burning the free quota.
+        traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+        # Don't ship user emails / IPs to Sentry (privacy: chat + auth app).
+        send_default_pii=False,
+        environment=os.environ.get("SENTRY_ENVIRONMENT", "production"),
+    )
