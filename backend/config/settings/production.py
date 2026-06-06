@@ -18,6 +18,12 @@ ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
 # allauth builds verification / password-reset links with this scheme.
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 
+# allauth's HTML flows (Google OAuth callback, the logout form POST) redirect
+# here when finished. Without this they fall back to "/" on the API domain, which
+# 404s — send them back to the frontend instead.
+LOGIN_REDIRECT_URL = FRONTEND_URL
+LOGOUT_REDIRECT_URL = FRONTEND_URL
+
 CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
 CORS_ALLOW_CREDENTIALS = True
 
