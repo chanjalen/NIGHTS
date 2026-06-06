@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Send, Paperclip, X, Flag } from 'lucide-react';
+import { ArrowLeft, Send, Image as ImageIcon, Video, X, Flag } from 'lucide-react';
 import { useAuth, getCsrfToken } from '@/contexts/AuthContext';
 import {
   kindOf,
@@ -64,6 +64,7 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -158,6 +159,7 @@ export default function ChatPage() {
     });
     setAttachedFile(null);
     if (fileRef.current) fileRef.current.value = '';
+    if (videoRef.current) videoRef.current.value = '';
   };
 
   const onPickFile = async (fileList: FileList | null) => {
@@ -342,10 +344,19 @@ export default function ChatPage() {
       )}
 
       <div className="chat-input-bar">
+        {/* Separate photo/video pickers: accept="image/*" makes iOS deliver the
+            still JPEG from a Live Photo instead of its .mov. */}
         <input
           ref={fileRef}
           type="file"
-          accept="image/*,video/*"
+          accept="image/*"
+          hidden
+          onChange={(e) => onPickFile(e.target.files)}
+        />
+        <input
+          ref={videoRef}
+          type="file"
+          accept="video/*"
           hidden
           onChange={(e) => onPickFile(e.target.files)}
         />
@@ -353,9 +364,17 @@ export default function ChatPage() {
           className="chat-attach-btn"
           onClick={() => fileRef.current?.click()}
           disabled={!connected || sending || !!attachedFile}
-          aria-label="Attach photo or video"
+          aria-label="Attach photo"
         >
-          <Paperclip size={18} />
+          <ImageIcon size={18} />
+        </button>
+        <button
+          className="chat-attach-btn"
+          onClick={() => videoRef.current?.click()}
+          disabled={!connected || sending || !!attachedFile}
+          aria-label="Attach video"
+        >
+          <Video size={18} />
         </button>
         <textarea
           ref={inputRef}

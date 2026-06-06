@@ -604,19 +604,36 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
                   </div>
                 )}
                 {media.length < MAX_FILES && (
-                  <label className="media-add-btn">
-                    + Add photos or videos
-                    <input
-                      type="file"
-                      accept="image/*,video/*"
-                      multiple
-                      hidden
-                      onChange={(e) => {
-                        addFiles(e.target.files);
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
+                  // Separate photo/video pickers: accept="image/*" makes iOS
+                  // deliver the still JPEG from a Live Photo instead of its .mov.
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <label className="media-add-btn">
+                      + Add photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        hidden
+                        onChange={(e) => {
+                          addFiles(e.target.files);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                    <label className="media-add-btn">
+                      + Add video
+                      <input
+                        type="file"
+                        accept="video/*"
+                        multiple
+                        hidden
+                        onChange={(e) => {
+                          addFiles(e.target.files);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
                 )}
                 <div className="rf-char">
                   {media.length} / {MAX_FILES} · videos up to {MAX_VIDEO_SECONDS}s

@@ -1,11 +1,13 @@
-# Production + dev backend stacks on one box, fronted by a single Caddy that
-# terminates TLS (auto Let's Encrypt) and reverse-proxies by subdomain.
-#
+# PRODUCTION backend stack (main branch) + the single shared Caddy edge proxy.
 #   docker compose -f docker-compose.prod.yml up -d --build
 #
-# Secrets live in .env.prod / .env.dev (chmod 600, gitignored) at the repo root,
-# and the CloudFront signing key under backend/secrets/. Only Caddy publishes
-# ports — api/redis are reachable only on the internal compose network.
+# Caddy also routes api-dev.findyournights.com to the DEV stack, which runs as a
+# separate compose project (docker-compose.dev.yml, from the ~/nite-dev clone on
+# the develop branch). They connect via the external "nite-edge" network, which
+# must be created once:  docker network create nite-edge
+#
+# Secrets live in .env.prod (chmod 600) + backend/secrets/. Only Caddy publishes
+# ports — api/redis are reachable only on internal Docker networks.
 
 services:
   caddy:
@@ -18,11 +20,12 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - default   # reach prod `api` (same project)
+      - edge      # reach `api-dev` (the dev compose project)
     depends_on:
       - api
-      - api-dev
 
-  # ── Production (api.findyournights.com → nite-prod DB) ───────────────────────
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -61,43 +64,10 @@ services:
     depends_on:
       - redis
 
-  # ── Dev / staging (api-dev.findyournights.com → nite-dev DB) ────────────────
-  redis-dev:
-    image: redis:7-alpine
-    restart: unless-stopped
-
-  api-dev:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
-    restart: unless-stopped
-    env_file: .env.dev
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.production
-      RUN_MIGRATIONS: "1"
-      REDIS_HOST: redis-dev
-    volumes:
-      - ./backend/secrets:/app/secrets:ro
-    depends_on:
-      - redis-dev
-
-  worker-dev:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
-    restart: unless-stopped
-    command: celery -A config worker --loglevel=info --concurrency=2
-    env_file: .env.dev
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.production
-      REDIS_HOST: redis-dev
-    mem_limit: 1g
-    cpus: 1.5
-    pids_limit: 256
-    volumes:
-      - ./backend/secrets:/app/secrets:ro
-    depends_on:
-      - redis-dev
+networks:
+  edge:
+    external: true
+    name: nite-edge
 
 volumes:
   caddy_data:

@@ -18,7 +18,24 @@ export const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
 const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif'];
 const VIDEO_EXTS = ['mp4', 'mov', 'webm'];
 
+// Extension → canonical MIME, mirroring the backend's allowed-type maps. Used to
+// recover a content-type when the browser reports an empty file.type (notably
+// HEIC on some browsers), so the presign request isn't rejected.
+const EXT_TO_TYPE: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp',
+  heic: 'image/heic', heif: 'image/heif', gif: 'image/gif',
+  mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm',
+};
+
 export type MediaKind = 'image' | 'video';
+
+// The content-type to send for presign: the browser's value when it's one we
+// allow, otherwise inferred from the file extension. Empty string if unknown.
+export function contentTypeOf(file: File): string {
+  if (IMAGE_TYPES.includes(file.type) || VIDEO_TYPES.includes(file.type)) return file.type;
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+  return EXT_TO_TYPE[ext] ?? '';
+}
 
 // Some browsers report an empty/odd file.type (notably HEIC) — fall back to the
 // file extension so valid uploads aren't wrongly rejected.
@@ -88,7 +105,7 @@ export async function uploadMedia(
     credentials: 'include',
     body: JSON.stringify({
       purpose,
-      files: files.map((f) => ({ content_type: f.type, size: f.size })),
+      files: files.map((f) => ({ content_type: contentTypeOf(f), size: f.size })),
     }),
   });
   if (!res.ok) {
