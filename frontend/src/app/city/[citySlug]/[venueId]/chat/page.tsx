@@ -73,6 +73,25 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Size the chat to the *visual* viewport so the on-screen keyboard doesn't
+  // cover the input bar / messages. visualViewport.height shrinks when the
+  // keyboard opens; --app-height drives .chat-page's height in CSS. (iOS ignores
+  // the viewport `interactiveWidget` hint, so it relies on this.)
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const apply = () => {
+      document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+      scrollToBottom();
+    };
+    apply();
+    vv.addEventListener('resize', apply);
+    return () => {
+      vv.removeEventListener('resize', apply);
+      document.documentElement.style.removeProperty('--app-height');
+    };
+  }, [scrollToBottom]);
+
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -360,6 +379,7 @@ export default function ChatPage() {
           value={input}
           onChange={(e) => setInput(e.target.value.slice(0, 280))}
           onKeyDown={handleKeyDown}
+          onFocus={() => setTimeout(scrollToBottom, 300)}
           disabled={!connected || sending}
           rows={1}
         />

@@ -2330,6 +2330,8 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  /* Let long words/URLs wrap instead of forcing the row wider (iOS Safari). */
+  min-width: 0;
 }
 
 .chat-row.mine .chat-bubble-wrap {
@@ -2414,6 +2416,9 @@ textarea {
 
 .chat-input {
   flex: 1;
+  /* Without this a <textarea> keeps its intrinsic (cols-based) width in a flex
+     row and pushes the input bar wider than the screen → horizontal scroll. */
+  min-width: 0;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--card-border);
   border-radius: 20px;
@@ -2792,4 +2797,168 @@ textarea {
 
 .profile-venue-link:hover {
   color: var(--accent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOBILE PASS
+   The rest of this sheet is desktop-tuned. These rules only kick in on small
+   screens, so the desktop layout above is untouched. Two things matter most:
+   (1) inputs must be ≥16px or iOS Safari auto-zooms the whole page on focus and
+       never zooms back out, and (2) the generous desktop spacing has to tighten
+   so content isn't squeezed into a thin column.
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* Belt-and-suspenders: nothing should ever push the page wider than the screen
+   (a single overflowing element is what makes a phone render the page "zoomed"). */
+html,
+body {
+  overflow-x: hidden;
+}
+
+img,
+video {
+  max-width: 100%;
+}
+
+/* iOS zoom-on-focus guard — applies everywhere, harmless on desktop. Any tappable
+   field below 16px makes mobile Safari zoom in on focus. */
+.auth-input,
+.chat-input,
+.rf-input,
+.rf-textarea,
+.filter-select,
+.request-venue-input {
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  /* ── Global spacing ── */
+  .container {
+    padding: 0 16px;
+  }
+
+  .section {
+    padding: 48px 0;
+  }
+
+  .section-title {
+    margin-bottom: 24px;
+  }
+
+  .stats-row {
+    gap: 24px;
+  }
+
+  /* ── Header ── */
+  .header-inner {
+    height: 60px;
+  }
+
+  .header-logo {
+    font-size: 24px;
+  }
+
+  /* ── Hero (home) ── Don't force full viewport height on a phone; just let it
+     breathe and leave room for the fixed bottom ticker. */
+  .hero {
+    min-height: auto;
+    padding-top: 32px;
+    padding-bottom: 92px;
+  }
+
+  .hero-tagline {
+    font-size: clamp(46px, 15vw, 96px);
+  }
+
+  /* ── City list ── */
+  .city-head {
+    gap: 18px;
+    margin: 12px 0;
+  }
+
+  .city-head-search {
+    max-width: none;
+  }
+
+  .venue-filters {
+    margin: 20px 0 28px;
+  }
+
+  /* ── Venue detail ── */
+  .venue-header {
+    margin-bottom: 28px;
+  }
+
+  .venue-name {
+    font-size: clamp(30px, 9vw, 44px);
+  }
+
+  .venue-rating-big {
+    font-size: 38px;
+  }
+
+  /* Action buttons: even, full-width, comfortable tap targets that wrap 2-up
+     instead of overflowing in one row. */
+  .venue-actions {
+    gap: 10px;
+  }
+
+  .venue-actions > * {
+    flex: 1 1 140px;
+    justify-content: center;
+    text-align: center;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* ── Profile ── */
+  .profile-hero {
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .profile-avatar-lg {
+    width: 56px;
+    height: 56px;
+    font-size: 26px;
+  }
+
+  .profile-name {
+    font-size: 26px;
+  }
+
+  .profile-tab {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  /* ── Sign in / auth ── */
+  .signin-card {
+    padding: 36px 22px;
+  }
+
+  .signin-brand {
+    font-size: 36px;
+    margin-bottom: 24px;
+  }
+
+  .signin-heading {
+    font-size: 26px;
+  }
+
+  /* ── Rating cards ── */
+  .rating-card {
+    padding: 20px 18px;
+  }
+}
+
+/* Chat is its own full-screen view (no site header). Height tracks the *visual*
+   viewport (set by JS in the chat page via --app-height) so when the on-screen
+   keyboard opens, the chat shrinks and the input bar stays above it instead of
+   being covered. Falls back to dynamic viewport height before JS runs / on
+   browsers without visualViewport. */
+@media (max-width: 640px) {
+  .chat-page {
+    height: var(--app-height, 100dvh);
+  }
 }
