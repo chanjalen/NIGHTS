@@ -86,29 +86,6 @@ class MessageMedia(models.Model):
         return f"{self.media_type} for message {self.message_id} ({self.status})"
 
 
-class MessageMediaReport(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    media = models.ForeignKey(
-        "chat.MessageMedia", on_delete=models.CASCADE, related_name="reports"
-    )
-    reporter = models.ForeignKey(
-        "accounts.User",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="chat_media_reports",
-    )
-    reason = models.CharField(max_length=280, blank=True)
-    resolved = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["resolved", "-created_at"]
-
-    def __str__(self):
-        return f"Report on {self.media_id} ({'resolved' if self.resolved else 'open'})"
-
-
 class VenueMessageReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     message = models.ForeignKey(

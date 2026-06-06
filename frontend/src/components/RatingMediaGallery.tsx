@@ -1,40 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { Flag } from 'lucide-react';
-import { getCsrfToken } from '@/contexts/AuthContext';
 import type { RatingMedia } from '@/types';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-export default function RatingMediaGallery({
-  media,
-  allowReport = true,
-}: {
-  media: RatingMedia[];
-  allowReport?: boolean;
-}) {
-  const [reported, setReported] = useState<Record<string, boolean>>({});
-
+export default function RatingMediaGallery({ media }: { media: RatingMedia[] }) {
   // Only show finished media; hide processing/removed/failed.
   const visible = media.filter((m) => m.status === 'ready' && m.file_url);
   if (visible.length === 0) return null;
-
-  const report = async (id: string) => {
-    if (reported[id]) return;
-    if (!confirm('Report this media as inappropriate?')) return;
-    try {
-      const res = await fetch(`${API}/api/v1/ratings/media/${id}/report/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({}),
-      });
-      if (res.ok) setReported((r) => ({ ...r, [id]: true }));
-    } catch {
-      /* ignore */
-    }
-  };
 
   return (
     <div className="rating-media-grid">
@@ -58,17 +29,6 @@ export default function RatingMediaGallery({
               preload="none"
               className="rating-media-thumb"
             />
-          )}
-          {allowReport && (
-            <button
-              type="button"
-              className="rating-media-report"
-              onClick={() => report(m.id)}
-              title={reported[m.id] ? 'Reported' : 'Report'}
-              aria-label="Report media"
-            >
-              <Flag size={12} fill={reported[m.id] ? 'currentColor' : 'none'} />
-            </button>
           )}
         </div>
       ))}

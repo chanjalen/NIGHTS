@@ -56,7 +56,6 @@ export default function ChatPage() {
   const [attachedPreview, setAttachedPreview] = useState<string | null>(null);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [mediaError, setMediaError] = useState('');
-  const [reported, setReported] = useState<Record<string, boolean>>({});
   const [reportedMsg, setReportedMsg] = useState<Record<string, boolean>>({});
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -222,22 +221,6 @@ export default function ChatPage() {
     }
   };
 
-  const reportMedia = async (mediaId: string) => {
-    if (reported[mediaId]) return;
-    if (!confirm('Report this media as inappropriate?')) return;
-    try {
-      const res = await fetch(`${API}/api/v1/chat/media/${mediaId}/report/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({}),
-      });
-      if (res.ok) setReported((r) => ({ ...r, [mediaId]: true }));
-    } catch {
-      /* ignore */
-    }
-  };
-
   const reportMessage = async (messageId: string) => {
     if (reportedMsg[messageId]) return;
     if (!confirm('Report this message?')) return;
@@ -254,44 +237,27 @@ export default function ChatPage() {
     }
   };
 
-  const renderMedia = (media: ChatMedia, canReport: boolean) => {
+  const renderMedia = (media: ChatMedia) => {
     if (media.status !== 'ready' || !media.file_url) {
       return <div className="chat-media-processing">Processing…</div>;
     }
-    const inner =
-      media.media_type === 'image' ? (
-        <a href={media.file_url} target="_blank" rel="noopener noreferrer">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={media.thumbnail_url || media.file_url}
-            alt="Shared media"
-            className="chat-media-el"
-          />
-        </a>
-      ) : (
-        <video
-          src={media.file_url}
-          poster={media.thumbnail_url || undefined}
-          controls
-          preload="none"
+    return media.media_type === 'image' ? (
+      <a href={media.file_url} target="_blank" rel="noopener noreferrer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={media.thumbnail_url || media.file_url}
+          alt="Shared media"
           className="chat-media-el"
         />
-      );
-    return (
-      <div className="chat-media-item">
-        {inner}
-        {canReport && (
-          <button
-            type="button"
-            className="chat-media-report"
-            onClick={() => reportMedia(media.id)}
-            title={reported[media.id] ? 'Reported' : 'Report'}
-            aria-label="Report media"
-          >
-            <Flag size={12} fill={reported[media.id] ? 'currentColor' : 'none'} />
-          </button>
-        )}
-      </div>
+      </a>
+    ) : (
+      <video
+        src={media.file_url}
+        poster={media.thumbnail_url || undefined}
+        controls
+        preload="none"
+        className="chat-media-el"
+      />
     );
   };
 
@@ -326,7 +292,7 @@ export default function ChatPage() {
               )}
               <div className="chat-bubble-wrap">
                 {!isMe && <span className="chat-sender">{msg.user_display_name}</span>}
-                {msg.media && <div className="chat-media">{renderMedia(msg.media, !isMe)}</div>}
+                {msg.media && <div className="chat-media">{renderMedia(msg.media)}</div>}
                 {msg.text && (
                   <div className={`chat-bubble${isMe ? ' mine' : ''}`}>{msg.text}</div>
                 )}

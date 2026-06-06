@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
@@ -35,25 +36,34 @@ class CheckInListCreateView(generics.ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         venue = serializer.validated_data["venue"]
 
-        # If already checked in here, return the existing check-in (no duplicate)
-        existing = CheckIn.objects.filter(
-            user=request.user,
-            venue=venue,
-            expires_at__gt=timezone.now(),
-        ).first()
-        if existing:
-            return Response(
-                CheckInSerializer(existing, context={"request": request}).data,
-                status=status.HTTP_200_OK,
+        # Lock the user row so simultaneous check-in clicks from the same account
+        # (multiple tabs / phone + laptop) serialize. Without this, two requests
+        # could both pass the "already checked in?" test before either inserts a
+        # row, creating duplicate check-ins and double-counting checkin_count.
+        with transaction.atomic():
+            request.user.__class__.objects.select_for_update().get(
+                pk=request.user.pk
             )
 
-        # Expire active check-ins at any other venue
-        CheckIn.objects.filter(
-            user=request.user,
-            expires_at__gt=timezone.now(),
-        ).exclude(venue=venue).update(expires_at=timezone.now())
+            # If already checked in here, return the existing check-in (no duplicate)
+            existing = CheckIn.objects.filter(
+                user=request.user,
+                venue=venue,
+                expires_at__gt=timezone.now(),
+            ).first()
+            if existing:
+                return Response(
+                    CheckInSerializer(existing, context={"request": request}).data,
+                    status=status.HTTP_200_OK,
+                )
 
-        self.perform_create(serializer)
+            # Expire active check-ins at any other venue
+            CheckIn.objects.filter(
+                user=request.user,
+                expires_at__gt=timezone.now(),
+            ).exclude(venue=venue).update(expires_at=timezone.now())
+
+            self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_create(self, serializer):

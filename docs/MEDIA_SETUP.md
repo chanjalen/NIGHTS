@@ -77,7 +77,9 @@ docker compose up api worker frontend   # worker runs the media pipeline
 - Allowed: images jpg/png/webp/heic; video mp4/mov (output is always H.264 MP4 + JPEG thumbnail)
 
 ## Moderation
-No automated filtering. Users can **report** media (`POST /api/v1/ratings/media/<id>/report/`);
-reports appear in the **Django admin** (`RatingMedia` + `MediaReport`) where staff can
-**remove** media (hides it and deletes the S3 objects). To add automated screening later,
-drop it into `apps/ratings/tasks.py::process_media` — no API changes needed.
+No automated filtering. Users report the **whole review** (`POST /api/v1/ratings/<id>/report/`)
+or **whole chat message** (`POST /api/v1/chat/messages/<id>/report/`) — attached media is
+covered by reporting its parent. Reports appear in the **Django admin** (`RatingReport`,
+`VenueMessageReport`); staff can delete the review/message, and the `RatingMedia` admin can
+still **remove** individual media (hides it and deletes the S3 objects). To add automated
+screening later, drop it into `apps/ratings/tasks.py::process_media` — no API changes needed.

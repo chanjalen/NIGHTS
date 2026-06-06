@@ -94,29 +94,6 @@ class RatingMedia(models.Model):
         return f"{self.media_type} for {self.rating_id} ({self.status})"
 
 
-class MediaReport(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    media = models.ForeignKey(
-        "ratings.RatingMedia", on_delete=models.CASCADE, related_name="reports"
-    )
-    reporter = models.ForeignKey(
-        "accounts.User",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="media_reports",
-    )
-    reason = models.CharField(max_length=280, blank=True)
-    resolved = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["resolved", "-created_at"]
-
-    def __str__(self):
-        return f"Report on {self.media_id} ({'resolved' if self.resolved else 'open'})"
-
-
 class RatingReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     rating = models.ForeignKey(

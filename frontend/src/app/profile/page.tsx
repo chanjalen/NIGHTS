@@ -206,7 +206,7 @@ export default function ProfilePage() {
                       )}
 
                       {r.media?.length > 0 && (
-                        <RatingMediaGallery media={r.media} allowReport={false} />
+                        <RatingMediaGallery media={r.media} />
                       )}
 
                       {(r.music_tags.length > 0 || r.crowd_tags.length > 0) && (

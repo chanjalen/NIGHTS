@@ -15,7 +15,7 @@ from apps.checkins.models import CheckIn
 from apps.common import parse_uuid
 from . import s3
 from .media_utils import ext_for_content_type, media_type_for_key
-from .models import MediaReport, Rating, RatingMedia, RatingReport
+from .models import Rating, RatingMedia, RatingReport
 from .serializers import RatingSerializer
 from .tasks import process_media
 
@@ -141,21 +141,6 @@ class MediaPresignView(APIView):
                 }
             )
         return Response({"uploads": uploads})
-
-
-class MediaReportView(APIView):
-    permission_classes = [IsAuthenticated]
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "media_report"
-
-    def post(self, request, media_id):
-        media = get_object_or_404(RatingMedia, id=media_id)
-        MediaReport.objects.create(
-            media=media,
-            reporter=request.user,
-            reason=str(request.data.get("reason", ""))[:280],
-        )
-        return Response({"reported": True}, status=status.HTTP_201_CREATED)
 
 
 class RatingReportView(APIView):

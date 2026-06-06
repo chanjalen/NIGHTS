@@ -1,12 +1,7 @@
 from django.contrib import admin
 
 from apps.ratings import s3
-from .models import (
-    MessageMedia,
-    MessageMediaReport,
-    VenueMessage,
-    VenueMessageReport,
-)
+from .models import MessageMedia, VenueMessage, VenueMessageReport
 
 
 def _remove_media(media: MessageMedia) -> None:
@@ -39,25 +34,6 @@ class MessageMediaAdmin(admin.ModelAdmin):
         for media in queryset:
             _remove_media(media)
         self.message_user(request, f"Removed {queryset.count()} media item(s).")
-
-
-@admin.register(MessageMediaReport)
-class MessageMediaReportAdmin(admin.ModelAdmin):
-    list_display = ["id", "media", "reporter", "reason", "resolved", "created_at"]
-    list_filter = ["resolved", "created_at"]
-    search_fields = ["media__id", "reason", "reporter__email"]
-    actions = ["remove_reported_media", "mark_resolved"]
-
-    @admin.action(description="Remove reported media + resolve")
-    def remove_reported_media(self, request, queryset):
-        for report in queryset.select_related("media"):
-            _remove_media(report.media)
-        queryset.update(resolved=True)
-        self.message_user(request, "Reported media removed and reports resolved.")
-
-    @admin.action(description="Mark resolved (keep media)")
-    def mark_resolved(self, request, queryset):
-        queryset.update(resolved=True)
 
 
 @admin.register(VenueMessageReport)
