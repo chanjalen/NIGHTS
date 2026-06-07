@@ -55,7 +55,10 @@ export function useAuth() {
 
 export function getCsrfToken(): string {
   if (typeof document === 'undefined') return '';
-  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  // Cookie name is env-driven so dev (csrftoken_dev) and prod (csrftoken) don't
+  // collide under the shared .findyournights.com cookie domain.
+  const name = process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME || 'csrftoken';
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]+)`));
   return match ? match[1] : '';
 }
 

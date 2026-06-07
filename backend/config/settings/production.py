@@ -44,6 +44,14 @@ CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
 SESSION_COOKIE_DOMAIN = os.environ.get("SESSION_COOKIE_DOMAIN") or None
 CSRF_COOKIE_DOMAIN = os.environ.get("CSRF_COOKIE_DOMAIN") or None
 
+# Distinct cookie names per environment. Dev and prod share the
+# .findyournights.com cookie domain, so without this the dev login would clobber
+# the prod session cookie (same name) in one browser. Defaults match Django's, so
+# prod is unchanged; .env.dev sets the *_dev variants. The frontend reads the CSRF
+# cookie by name too (NEXT_PUBLIC_CSRF_COOKIE_NAME).
+SESSION_COOKIE_NAME = os.environ.get("SESSION_COOKIE_NAME", "sessionid")
+CSRF_COOKIE_NAME = os.environ.get("CSRF_COOKIE_NAME", "csrftoken")
+
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

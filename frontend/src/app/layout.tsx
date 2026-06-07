@@ -17,6 +17,11 @@ const bricolage = Bricolage_Grotesque({
 export const metadata: Metadata = {
   title: 'Nights',
   description: 'Real ratings from people who were actually there. Find where to go tonight.',
+  // Belt-and-suspenders with robots.ts: emit <meta name="robots" content="noindex">
+  // on every non-production deployment (dev/preview), so dev never gets indexed.
+  ...(process.env.VERCEL_ENV !== 'production'
+    ? { robots: { index: false, follow: false } }
+    : {}),
 };
 
 // Explicit so mobile browsers always render at device width (1:1 scale) — and so

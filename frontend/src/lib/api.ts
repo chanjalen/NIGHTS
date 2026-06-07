@@ -7,7 +7,15 @@ const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   'http://localhost:8000';
 
-const defaultOptions: RequestInit = { cache: 'no-store' };
+// Server-only shared secret so a locked-down dev backend (Caddy allows my IP OR
+// this header) still accepts Vercel's SSR fetches, which originate from Vercel's
+// IPs, not my browser. DEV_PROXY_SECRET is NOT NEXT_PUBLIC, so it never reaches
+// the browser; it's unset in prod (no gate there) → no header sent.
+const SERVER_HEADERS: Record<string, string> | undefined = process.env.DEV_PROXY_SECRET
+  ? { 'X-Dev-Proxy-Secret': process.env.DEV_PROXY_SECRET }
+  : undefined;
+
+const defaultOptions: RequestInit = { cache: 'no-store', headers: SERVER_HEADERS };
 
 type MaybePagedResponse<T> = T[] | { results: T[] };
 
@@ -101,7 +109,7 @@ export async function getRatings(venueId: string): Promise<Rating[]> {
   const cookieHeader = cookies().toString();
   const res = await fetch(`${BASE_URL}/api/v1/ratings/?venue=${venueId}`, {
     ...defaultOptions,
-    headers: cookieHeader ? { Cookie: cookieHeader } : {},
+    headers: { ...(SERVER_HEADERS ?? {}), ...(cookieHeader ? { Cookie: cookieHeader } : {}) },
   });
   if (!res.ok) throw new Error(`Failed to fetch ratings: ${res.status}`);
   return unwrap<Rating>(await res.json());

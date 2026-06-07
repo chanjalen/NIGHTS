@@ -12,5 +12,19 @@ api.findyournights.com {
 }
 
 api-dev.findyournights.com {
-	reverse_proxy api-dev:8000
+	# Private dev. Serve only requests from my IP ({$DEV_ALLOW_IP}) or Vercel's
+	# SSR (which sends the shared-secret header — browser fetches can't, so they
+	# rely on the IP rule). Everyone else gets 403. Both values are injected from
+	# .env.caddy into the caddy container env (never committed). Load-time {$...}
+	# substitution so remote_ip parses a concrete CIDR.
+	@blocked {
+		not remote_ip {$DEV_ALLOW_IP}
+		not header X-Dev-Proxy-Secret "{$DEV_PROXY_SECRET}"
+	}
+	handle @blocked {
+		respond 403
+	}
+	handle {
+		reverse_proxy api-dev:8000
+	}
 }
