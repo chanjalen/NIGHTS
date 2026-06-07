@@ -57,7 +57,7 @@ export default function ChatPage() {
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [mediaError, setMediaError] = useState('');
   const [reportedMsg, setReportedMsg] = useState<Record<string, boolean>>({});
-  const [dbg, setDbg] = useState(''); // TEMP iOS keyboard diagnostic
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectDelay = useRef(1000);
@@ -90,25 +90,17 @@ export default function ChatPage() {
     const setVars = () => {
       de.style.setProperty('--app-height', `${vv.height}px`);
       de.style.setProperty('--app-top', `${vv.offsetTop}px`);
-      // TEMP diagnostic — capture the real iOS values when the keyboard is up.
-      const cp = document.querySelector('.chat-page') as HTMLElement | null;
-      const bar = document.querySelector('.chat-input-bar') as HTMLElement | null;
-      const r = (n: number | undefined) => (n == null ? '?' : Math.round(n));
-      setDbg(
-        `iH${window.innerHeight} vvH${r(vv.height)} vvT${r(vv.offsetTop)} ` +
-        `cpTop${r(cp?.getBoundingClientRect().top)} cpH${r(cp?.getBoundingClientRect().height)} ` +
-        `msgH${r(messagesRef.current?.clientHeight)} barBot${r(bar?.getBoundingClientRect().bottom)}`
-      );
+      // Keyboard up = the visual viewport is much shorter than the layout
+      // viewport. Compact the header to give those pixels back to the messages.
+      setKeyboardOpen(window.innerHeight - vv.height > 120);
     };
     const onResize = () => { setVars(); scrollToBottom(); };
     setVars();
     vv.addEventListener('resize', onResize);
     vv.addEventListener('scroll', setVars);
-    const poll = setInterval(setVars, 300); // TEMP: catch accessory-bar changes
     return () => {
       vv.removeEventListener('resize', onResize);
       vv.removeEventListener('scroll', setVars);
-      clearInterval(poll);
       de.style.removeProperty('--app-height');
       de.style.removeProperty('--app-top');
     };
@@ -303,25 +295,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="chat-page">
-      {/* TEMP iOS keyboard diagnostic — remove after debugging */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 99999,
-          background: 'rgba(0,0,0,0.85)',
-          color: '#34e27e',
-          font: '11px/1.3 monospace',
-          padding: '2px 6px',
-          pointerEvents: 'none',
-          textAlign: 'center',
-        }}
-      >
-        {dbg}
-      </div>
+    <div className={`chat-page${keyboardOpen ? ' keyboard-open' : ''}`}>
       <div className="chat-header">
         <Link href={`/city/${citySlug}/${venueId}`} className="chat-back">
           <ArrowLeft size={18} />
