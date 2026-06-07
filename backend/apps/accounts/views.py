@@ -1,3 +1,5 @@
+import logging
+
 from allauth.account.models import EmailAddress
 from allauth.account.utils import send_email_confirmation
 from django.db.models import Count
@@ -14,6 +16,8 @@ from apps.checkins.models import CheckIn
 from apps.saved.models import SavedVenue
 from .models import User
 from .serializers import UserSerializer
+
+logger = logging.getLogger(__name__)
 
 
 @method_decorator(ensure_csrf_cookie, name="get")
@@ -54,8 +58,13 @@ class ResendVerificationView(APIView):
                 user=user, verified=True
             ).exists():
                 # request._request: allauth wants the underlying HttpRequest.
-                # No-ops (no exception) if the confirm_email cooldown is active.
-                send_email_confirmation(request._request, user)
+                # Wrapped so a send failure degrades to the same generic 200
+                # instead of a 500 — that keeps the response identical for every
+                # email (no enumeration via status code) and never breaks resend.
+                try:
+                    send_email_confirmation(request._request, user)
+                except Exception:
+                    logger.exception("resend verification failed for an account")
         return Response(
             {"detail": "If that account still needs verification, we've sent a new link."}
         )
