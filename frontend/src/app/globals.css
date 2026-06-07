@@ -3302,4 +3302,24 @@ video {
     right: 0;
     height: var(--app-height, 100dvh);
   }
+
+  /* When the on-screen keyboard is up, vertical space is tight. Compact the
+     header and trim padding so more of the conversation stays visible. */
+  .chat-page.keyboard-open .chat-header {
+    padding: 8px 20px;
+  }
+  .chat-page.keyboard-open .chat-header-title {
+    font-size: 16px;
+  }
+  .chat-page.keyboard-open .chat-status {
+    display: none;
+  }
+  .chat-page.keyboard-open .chat-messages {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .chat-page.keyboard-open .chat-input-bar {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
 }
