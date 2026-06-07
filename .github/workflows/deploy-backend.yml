@@ -1,0 +1,89 @@
+name: Deploy backend
+
+# Build the backend image in CI, push it to GHCR, then roll the matching stack
+# on the Lightsail box. develop -> dev stack, main -> prod stack. The box only
+# pulls images (it no longer builds), so prod and dev can run different commits.
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "backend/**"
+      - "docker-compose.prod.yml"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/chanjalen/nights-backend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      env_name: ${{ steps.meta.outputs.env_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve environment from branch
+        id: meta
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "env_name=prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "env_name=dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.meta.outputs.env_name }}
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+    steps:
+      - name: Roll the ${{ needs.build.outputs.env_name }} stack
+        uses: appleboy/ssh-action@v1
+        env:
+          ENV_NAME: ${{ needs.build.outputs.env_name }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          envs: ENV_NAME,GHCR_USER,GHCR_TOKEN
+          script: |
+            set -e
+            cd ~/nite
+            # Keep infra config (compose, Caddyfile) current. App code runs from
+            # the image, so the box always tracks main for these files only.
+            git pull origin main
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            if [ "$ENV_NAME" = "prod" ]; then
+              docker compose -f docker-compose.prod.yml pull api worker
+              docker compose -f docker-compose.prod.yml up -d api worker
+            else
+              docker compose -f docker-compose.prod.yml pull api-dev worker-dev
+              docker compose -f docker-compose.prod.yml up -d api-dev worker-dev
+            fi
+            docker image prune -f

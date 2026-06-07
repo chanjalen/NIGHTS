@@ -101,7 +101,13 @@ docker compose -f docker-compose.prod.yml exec api-dev  python manage.py creates
 docker compose -f docker-compose.prod.yml logs -f caddy
 ```
 
-**Redeploy after a code change:** `git pull && docker compose -f docker-compose.prod.yml up -d --build`
+**Redeploy after a code change:** push to git — CI does the rest.
+`.github/workflows/deploy-backend.yml` builds the backend image, pushes it to GHCR,
+and rolls the matching stack over SSH. Push to **`develop`** → `api-dev`/`worker-dev`;
+push to **`main`** → `api`/`worker`. The box only pulls images (it no longer builds).
+
+Manual roll on the box (rarely needed): `docker compose -f docker-compose.prod.yml pull api worker && docker compose -f docker-compose.prod.yml up -d api worker`
+Rollback to an earlier build: `PROD_TAG=sha-<commit> docker compose -f docker-compose.prod.yml up -d api worker`
 
 ---
 
@@ -151,5 +157,4 @@ docker compose -f docker-compose.prod.yml logs -f caddy
 ## Deferred (later)
 
 - Mobile token auth via allauth headless **app client**.
-- CI/CD auto-deploy (GitHub Actions) instead of manual `git pull && up --build`.
 - Sentry error monitoring, uptime checks, Supabase backup policy.

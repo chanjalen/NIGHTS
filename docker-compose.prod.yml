@@ -1,7 +1,11 @@
 # Production + dev backend stacks on one box, fronted by a single Caddy that
 # terminates TLS (auto Let's Encrypt) and reverse-proxies by subdomain.
 #
-#   docker compose -f docker-compose.prod.yml up -d --build
+# The backend services run prebuilt images from GHCR (built by CI on push):
+#   prod  -> :${PROD_TAG:-prod}   dev -> :${DEV_TAG:-dev}
+# Pin a specific build for rollback, e.g.  PROD_TAG=sha-<commit> docker compose ... up -d api worker
+#
+#   docker compose -f docker-compose.prod.yml up -d   # pulls images, no local build
 #
 # Secrets live in .env.prod / .env.dev (chmod 600, gitignored) at the repo root,
 # and the CloudFront signing key under backend/secrets/. Only Caddy publishes
@@ -28,9 +32,7 @@ services:
     restart: unless-stopped
 
   api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
+    image: ghcr.io/chanjalen/nights-backend:${PROD_TAG:-prod}
     restart: unless-stopped
     env_file: .env.prod
     environment:
@@ -43,9 +45,7 @@ services:
       - redis
 
   worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
+    image: ghcr.io/chanjalen/nights-backend:${PROD_TAG:-prod}
     restart: unless-stopped
     command: celery -A config worker --loglevel=info --concurrency=2
     env_file: .env.prod
@@ -67,9 +67,7 @@ services:
     restart: unless-stopped
 
   api-dev:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
+    image: ghcr.io/chanjalen/nights-backend:${DEV_TAG:-dev}
     restart: unless-stopped
     env_file: .env.dev
     environment:
@@ -82,9 +80,7 @@ services:
       - redis-dev
 
   worker-dev:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
+    image: ghcr.io/chanjalen/nights-backend:${DEV_TAG:-dev}
     restart: unless-stopped
     command: celery -A config worker --loglevel=info --concurrency=2
     env_file: .env.dev
