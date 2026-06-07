@@ -159,6 +159,9 @@ REST_FRAMEWORK = {
         "rating_write": "15/min",
         "venue_request": "10/min",
         "write": "60/min",
+        # Password-less "resend verification email" endpoint (per IP). Actual
+        # email sends are further capped by allauth's confirm_email 1/3m/account.
+        "resend_verification": "5/min",
     },
 }
 
@@ -200,6 +203,42 @@ SOCIALACCOUNT_LOGIN_ON_GET = True
 HEADLESS_FRONTEND_URLS = {
     "account_confirm_email": f"{FRONTEND_URL}/verify-email/{{key}}",
     "account_reset_password_from_key": f"{FRONTEND_URL}/reset-password/{{key}}",
+}
+
+# Password-reset links expire 30 minutes after they're emailed. allauth's reset
+# token generator extends Django's PasswordResetTokenGenerator, which checks this
+# setting in check_token() — so a key older than this is rejected as invalid.
+# (Django's default is 3 days.)
+PASSWORD_RESET_TIMEOUT = 60 * 30
+
+# Email-confirmation links also expire after 30 minutes (allauth's default is 3
+# days). The setting is in days, so 30/1440; allauth's key_expired() compares
+# against `sent + timedelta(days=...)`. A short window is fine because the sign-in
+# page offers a "resend verification" action — re-attempting login re-sends the
+# link, gated by the confirm_email rate limit below (1 per 3 min per account).
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 30 / (24 * 60)
+
+# The allauth auth endpoints (login / signup / password-reset) are NOT DRF views,
+# so the DREST_FRAMEWORK throttles above don't reach them — allauth applies its
+# own per-action limits instead. Pinning them here (rather than relying on
+# allauth's shipped defaults) keeps the brute-force / reset-spam protections
+# stable across allauth upgrades. Format: "<count>/<period>/<scope>", scope is
+# ip | key | user. Multiple comma-separated buckets must all pass.
+ACCOUNT_RATE_LIMITS = {
+    # Brute-force protection: cap failed logins per IP and per account.
+    "login_failed": "5/5m/ip,5/5m/key",
+    # Overall login attempts per IP (incl. successful).
+    "login": "30/m/ip",
+    "signup": "20/m/ip",
+    # Reset-email spam: per IP and per target email address.
+    "reset_password": "5/m/ip,3/m/key",
+    # Submitting a new password via a reset link.
+    "reset_password_from_key": "20/m/ip",
+    # Authenticated account actions.
+    "change_password": "5/m/user",
+    "manage_email": "10/m/user",
+    # Verification / confirmation emails.
+    "confirm_email": "1/3m/key",
 }
 
 # ── Email delivery ───────────────────────────────────────────────────────────

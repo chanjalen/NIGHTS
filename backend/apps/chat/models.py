@@ -29,6 +29,10 @@ class VenueMessage(models.Model):
 
     class Meta:
         ordering = ["created_at"]
+        # Hot path: chat history/poll — filter(venue=…, expires_at__gt=now)
+        # ordered by created_at. (venue, created_at) serves the venue partition
+        # and the ordering in one index.
+        indexes = [models.Index(fields=["venue", "created_at"])]
 
     def save(self, *args, **kwargs):
         if not self.expires_at:

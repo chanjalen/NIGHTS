@@ -58,6 +58,26 @@ export function requestPasswordReset(email: string) {
   return post('/auth/password/request', { email });
 }
 
+// Password-less resend of the email-verification link (our own DRF endpoint,
+// not allauth headless). Only needs the email, so it works even when the user
+// has forgotten their password. Always returns a generic 200.
+export async function resendVerification(email: string): Promise<AuthResult> {
+  const csrf = await ensureCsrf();
+  const res = await fetch(`${API}/api/v1/accounts/resend-verification/`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+    body: JSON.stringify({ email }),
+  });
+  let body: any = null;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+  return { ok: res.ok, status: res.status, body };
+}
+
 export function resetPassword(key: string, password: string) {
   return post('/auth/password/reset', { key, password });
 }

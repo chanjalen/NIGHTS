@@ -1,9 +1,12 @@
+from allauth.account.models import EmailAddress
+from allauth.account.utils import send_email_confirmation
 from django.db.models import Count
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from apps.ratings.models import Rating, RatingMedia
 from apps.ratings.serializers import RatingMediaSerializer
@@ -22,6 +25,40 @@ class CSRFView(APIView):
 
     def get(self, request):
         return Response({"detail": "ok"})
+
+
+class ResendVerificationView(APIView):
+    """Password-less resend of the email-verification link.
+
+    Mirrors the password-reset flow: takes only an email and, if that account
+    exists and isn't verified, sends a fresh confirmation link. The link points
+    at the SPA (allauth builds it via HEADLESS_FRONTEND_URLS since headless is
+    enabled). This covers the one case a login-triggered resend can't — a user
+    who is both unverified *and* has forgotten their password.
+
+    Always returns the same generic response so it never reveals whether an
+    account exists or its verification state. Actual sends are gated by allauth's
+    confirm_email rate limit (1 per 3 min per account); the scoped throttle caps
+    request volume per IP.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "resend_verification"
+
+    def post(self, request):
+        email = (request.data.get("email") or "").strip().lower()
+        if email:
+            user = User.objects.filter(email__iexact=email).first()
+            if user and not EmailAddress.objects.filter(
+                user=user, verified=True
+            ).exists():
+                # request._request: allauth wants the underlying HttpRequest.
+                # No-ops (no exception) if the confirm_email cooldown is active.
+                send_email_confirmation(request._request, user)
+        return Response(
+            {"detail": "If that account still needs verification, we've sent a new link."}
+        )
 
 
 class MeView(RetrieveUpdateAPIView):

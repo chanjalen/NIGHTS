@@ -75,12 +75,6 @@ class RatingSerializer(serializers.ModelSerializer):
                 f"You can attach at most {settings.MEDIA_MAX_FILES_PER_RATING} files."
             )
         return value
-        extra_kwargs = {
-            "day_of_week": {"required": True, "allow_null": False},
-            "price_level": {"required": True, "allow_null": False},
-            "music_tags": {"required": True},
-            "crowd_tags": {"required": True},
-        }
 
     def validate_music_tags(self, value):
         if not value:

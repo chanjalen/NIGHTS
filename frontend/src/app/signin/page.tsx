@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { login, signup, firstError } from '@/lib/auth';
+import { login, signup, resendVerification, firstError } from '@/lib/auth';
 
 function GoogleLogo() {
   return (
@@ -31,6 +31,9 @@ export default function SignInPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  // True once a login/signup attempt reveals the account exists but isn't
+  // email-verified — unlocks the "resend verification link" action.
+  const [pendingVerify, setPendingVerify] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -45,6 +48,29 @@ export default function SignInPage() {
     setError('');
     setNotice('');
     setConfirm('');
+    setPendingVerify(false);
+  }
+
+  // Password-less resend — needs only the email, so it works even if the user
+  // has forgotten their password. Server caps sends to 1 per 3 min per account.
+  async function handleResend() {
+    if (!email) {
+      setError('Enter your email above, then resend.');
+      return;
+    }
+    setError('');
+    setBusy(true);
+    try {
+      await resendVerification(email);
+      setNotice(
+        `If ${email} still needs verifying, a new link is on its way — check your ` +
+        `inbox and spam. Links expire in 30 minutes.`
+      );
+    } catch {
+      setError('Could not resend just now — please try again in a moment.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -72,6 +98,7 @@ export default function SignInPage() {
 
       // Accepted but a verification step is pending (401 with a flow).
       if (res.status === 401) {
+        setPendingVerify(true);
         setNotice(
           mode === 'signup'
             ? `Almost there — we sent a verification link to ${email}. Click it, then log in.`
@@ -163,6 +190,17 @@ export default function SignInPage() {
 
           {error && <p className="auth-error">{error}</p>}
           {notice && <p className="auth-notice">{notice}</p>}
+
+          {pendingVerify && (
+            <button
+              type="button"
+              className="auth-link"
+              onClick={handleResend}
+              disabled={busy}
+            >
+              Resend verification email
+            </button>
+          )}
 
           <button type="submit" className="auth-submit" disabled={busy}>
             {busy ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}

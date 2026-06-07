@@ -17,6 +17,9 @@ class CheckIn(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        # Hot path: "active check-ins at venue X" (venue lists annotate counts,
+        # chat permission checks). Matches filter(venue=…, expires_at__gt=now).
+        indexes = [models.Index(fields=["venue", "expires_at"])]
 
     def save(self, *args, **kwargs):
         if not self.expires_at:

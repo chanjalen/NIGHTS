@@ -26,6 +26,21 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
     (ACCOUNT_EMAIL_VERIFICATION = "mandatory"), so linking by email is safe.
     """
 
+    def is_auto_signup_allowed(self, request, sociallogin):
+        """Never fall back to allauth's classic HTML signup form.
+
+        By default allauth bypasses auto-signup (and renders the unstyled
+        ``/accounts/3rdparty/signup/`` page on the API domain) whenever the
+        social email collides with an existing account. But ``pre_social_login``
+        below already resolves every collision — it connects to a verified
+        account or drops unverified claims — so there's nothing left for that
+        form to collect. As long as we have an email (Google always returns a
+        verified one), auto-create silently and send the user back to the SPA.
+        """
+        if sociallogin.user.email:
+            return True
+        return super().is_auto_signup_allowed(request, sociallogin)
+
     def pre_social_login(self, request, sociallogin):
         if sociallogin.is_existing:
             return
