@@ -240,7 +240,7 @@ class Command(BaseCommand):
                 continue
 
             neighborhood = extract_component(components, "neighborhood", "sublocality_level_1") or ""
-            price_level = PRICE_MAP.get(place.get("priceLevel", ""))
+            google_price = PRICE_MAP.get(place.get("priceLevel", ""))
 
             venue_defaults = {
                 "name": name,
@@ -248,7 +248,7 @@ class Command(BaseCommand):
                 "neighborhood": neighborhood,
                 "lat": p_lat,
                 "lng": p_lng,
-                "price_level": price_level,
+                "google_price_level": google_price,
                 "timezone": tz,
                 "city": city,
             }
@@ -258,15 +258,17 @@ class Command(BaseCommand):
                 for k, v in venue_defaults.items():
                     setattr(venue, k, v)
                 venue.save()
+                venue.recompute_price(save=True)
                 updated_venues += 1
             except Venue.DoesNotExist:
                 slug = make_slug(name, city.id, existing_slugs)
                 try:
-                    Venue.objects.create(
+                    venue = Venue.objects.create(
                         google_place_id=place_id,
                         slug=slug,
                         **venue_defaults,
                     )
+                    venue.recompute_price(save=True)
                     created_venues += 1
                 except Exception as exc:  # noqa: BLE001
                     self.stderr.write(f"  Skipped '{name}': {exc}")
