@@ -71,7 +71,9 @@ def notify_report(*, kind, reporter, reason, venue, text, media, admin_url=""):
 
     if admin_url:
         blocks.append({"type": "context", "elements": [
-            {"type": "mrkdwn", "text": f"<{admin_url}|Open in Django admin →>"}]})
+            {"type": "mrkdwn",
+             "text": f"<{admin_url}|Open {kind} in admin →>  ·  the red *Delete* "
+                     f"there removes the {kind} (and this report)"}]})
 
     try:
         requests.post(_WEBHOOK_URL, json={"blocks": blocks}, timeout=_TIMEOUT)

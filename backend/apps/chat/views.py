@@ -84,7 +84,7 @@ class VenueMessageReportView(APIView):
                 text=message.text,
                 media=media,
                 admin_url=request.build_absolute_uri(
-                    reverse("admin:chat_venuemessagereport_change", args=[report.id])
+                    reverse("admin:chat_venuemessage_change", args=[message.id])
                 ),
             )
         return Response({"reported": True}, status=status.HTTP_201_CREATED)

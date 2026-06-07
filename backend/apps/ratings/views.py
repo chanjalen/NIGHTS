@@ -182,7 +182,7 @@ class RatingReportView(APIView):
                 text=rating.comment,
                 media=media,
                 admin_url=request.build_absolute_uri(
-                    reverse("admin:ratings_ratingreport_change", args=[report.id])
+                    reverse("admin:ratings_rating_change", args=[rating.id])
                 ),
             )
         return Response({"reported": True}, status=status.HTTP_201_CREATED)
