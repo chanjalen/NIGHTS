@@ -3,6 +3,7 @@ import uuid
 from django.conf import settings
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
@@ -13,6 +14,7 @@ from rest_framework.views import APIView
 
 from apps.analytics import track
 from apps.checkins.models import CheckIn
+from apps.notifications import notify_report
 from apps.common import parse_uuid
 from . import s3
 from .media_utils import ext_for_content_type, media_type_for_key
@@ -158,9 +160,29 @@ class RatingReportView(APIView):
 
     def post(self, request, rating_id):
         rating = get_object_or_404(Rating, id=rating_id)
-        RatingReport.objects.get_or_create(
+        report, created = RatingReport.objects.get_or_create(
             rating=rating,
             reporter=request.user,
             defaults={"reason": str(request.data.get("reason", ""))[:280]},
         )
+        if created:
+            media = [
+                {
+                    "media_type": m.media_type,
+                    "image_url": m.thumbnail_url or m.file_url,
+                    "link_url": m.file_url,
+                }
+                for m in rating.media.filter(status=RatingMedia.READY)
+            ]
+            notify_report(
+                kind="review",
+                reporter=request.user,
+                reason=report.reason,
+                venue=rating.venue.name,
+                text=rating.comment,
+                media=media,
+                admin_url=request.build_absolute_uri(
+                    reverse("admin:ratings_ratingreport_change", args=[report.id])
+                ),
+            )
         return Response({"reported": True}, status=status.HTTP_201_CREATED)
