@@ -1,3 +1,4 @@
+import math
 import uuid
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
@@ -23,7 +24,13 @@ class Venue(models.Model):
     timezone = models.CharField(max_length=50, default="America/Chicago")
     overall_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
     total_ratings = models.PositiveIntegerField(default=0)
+    # `price_level` is the *displayed* price: the average of Google's price (as one
+    # vote) and every user-submitted rating price. `google_price_level` preserves
+    # Google's seeded value so it stays a constant vote across recomputes.
     price_level = models.IntegerField(choices=PRICE_CHOICES, null=True, blank=True)
+    google_price_level = models.IntegerField(
+        choices=PRICE_CHOICES, null=True, blank=True
+    )
     music_tags = ArrayField(
         models.CharField(max_length=50), default=list, blank=True
     )
@@ -48,6 +55,24 @@ class Venue(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.city})"
+
+    def recompute_price(self, save=False):
+        """Average Google's price (one vote) with every user rating price.
+
+        A half-way average rounds down (e.g. avg 2.5 → $$). When there are no
+        prices at all (no Google price and no priced ratings), price is unknown.
+        """
+        votes = list(
+            self.ratings.exclude(price_level__isnull=True).values_list(
+                "price_level", flat=True
+            )
+        )
+        if self.google_price_level is not None:
+            votes.append(self.google_price_level)
+        self.price_level = math.ceil(sum(votes) / len(votes) - 0.5) if votes else None
+        if save:
+            self.save(update_fields=["price_level"])
+        return self.price_level
 
 
 class VenueRequest(models.Model):

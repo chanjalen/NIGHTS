@@ -1,13 +1,11 @@
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Users } from 'lucide-react';
 import Header from '@/components/Header';
-import DecorativeBorder from '@/components/DecorativeBorder';
 import StarRating from '@/components/StarRating';
 import PriceLevel from '@/components/PriceLevel';
 import VenueActions from '@/components/VenueActions';
 import CleanUrl from '@/components/CleanUrl';
-import RatingMediaGallery from '@/components/RatingMediaGallery';
-import RatingReportButton from '@/components/RatingReportButton';
+import RatingsList from '@/components/RatingsList';
 import { getVenue, getRatings } from '@/lib/api';
 import { Rating } from '@/types';
 
@@ -25,76 +23,6 @@ export async function generateMetadata({ params }: VenueDetailPageProps) {
   }
 }
 
-function formatDate(dateStr: string): string {
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
-function formatDayVisited(day: string): string {
-  return `Day Visited: ${day.charAt(0) + day.slice(1).toLowerCase()}`;
-}
-
-function RatingCard({ rating }: { rating: Rating }) {
-  return (
-    <div className={`rating-card${rating.is_own ? ' is-own' : ''}`}>
-      <div className="rating-card-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <StarRating value={rating.overall} size={16} />
-          <span className="rating-date">{formatDate(rating.created_at)}</span>
-          {rating.day_of_week && (
-            <span className="rating-meta" style={{ marginTop: 0 }}>
-              {formatDayVisited(rating.day_of_week)}
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          {rating.is_own && <span className="rating-own-badge">Your review</span>}
-          {rating.checkin_verified && (
-            <span className="badge-verified">✓ Verified</span>
-          )}
-          {!rating.is_own && <RatingReportButton ratingId={rating.id} />}
-        </div>
-      </div>
-
-      {rating.comment && (
-        <p className="rating-comment">{rating.comment}</p>
-      )}
-
-      {rating.media?.length > 0 && <RatingMediaGallery media={rating.media} />}
-
-      {(rating.music_tags.length > 0 || rating.crowd_tags.length > 0) && (
-        <div className="tags-row">
-          {rating.music_tags.map((tag) => (
-            <span key={tag} className="badge">
-              {tag}
-            </span>
-          ))}
-          {rating.crowd_tags.map((tag) => (
-            <span key={tag} className="badge">
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {rating.would_go_back !== null && (
-        <div className="rating-footer">
-          <span className={`rating-return ${rating.would_go_back ? 'yes' : 'no'}`}>
-            {rating.would_go_back ? '↩ Would return' : '✕ Wouldn\'t return'}
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default async function VenueDetailPage({ params, searchParams }: VenueDetailPageProps) {
   const { citySlug, venueId } = params;
@@ -188,6 +116,7 @@ export default async function VenueDetailPage({ params, searchParams }: VenueDet
               <div className="venue-rating-row">
                 {displayRating ? (
                   <>
+                    <StarRating value={rating} size={22} />
                     <div>
                       <span className="venue-rating-big">{displayRating}</span>
                       <span
@@ -198,7 +127,6 @@ export default async function VenueDetailPage({ params, searchParams }: VenueDet
                         {venue.total_ratings === 1 ? 'rating' : 'ratings'}
                       </span>
                     </div>
-                    <StarRating value={rating} size={22} />
                   </>
                 ) : (
                   <span className="venue-rating-sub">No ratings yet</span>
@@ -238,30 +166,8 @@ export default async function VenueDetailPage({ params, searchParams }: VenueDet
 
             <VenueActions venueId={venueId} citySlug={citySlug} />
 
-            <DecorativeBorder />
-
             {/* Ratings Section */}
-            <div style={{ paddingTop: '40px', paddingBottom: '80px' }}>
-              <h2
-                className="section-title"
-                style={{ fontSize: '34px', marginBottom: '24px' }}
-              >
-                Ratings
-              </h2>
-
-              {ratings.length === 0 ? (
-                <div className="empty-state" style={{ textAlign: 'left', padding: '40px 0' }}>
-                  <p className="empty-state-title">No ratings yet.</p>
-                  <p>Be the first to rate this venue.</p>
-                </div>
-              ) : (
-                <div>
-                  {ratings.map((r) => (
-                    <RatingCard key={r.id} rating={r} />
-                  ))}
-                </div>
-              )}
-            </div>
+            <RatingsList ratings={ratings} />
           </div>
         </div>
       </main>

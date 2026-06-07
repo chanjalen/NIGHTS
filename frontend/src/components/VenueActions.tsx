@@ -352,23 +352,6 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
   return (
     <>
       <div className="venue-actions">
-        {checkedIn ? (
-          <button
-            className="btn-checkout"
-            onClick={handleCheckout}
-            disabled={checkinLoading}
-          >
-            {checkinLoading ? 'Leaving…' : 'Check Out'}
-          </button>
-        ) : (
-          <button
-            className="btn-checkin"
-            onClick={handleCheckin}
-            disabled={checkinLoading}
-          >
-            {checkinLoading ? 'Checking in…' : "I'm Here Now"}
-          </button>
-        )}
         <button
           className={`btn-rate${submitted ? ' is-rated' : ''}`}
           onClick={() => {
@@ -387,6 +370,23 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
         >
           {saved ? '♥ Saved' : '♡ Save'}
         </button>
+        {checkedIn ? (
+          <button
+            className="btn-checkout"
+            onClick={handleCheckout}
+            disabled={checkinLoading}
+          >
+            {checkinLoading ? 'Leaving…' : 'Check Out'}
+          </button>
+        ) : (
+          <button
+            className="btn-checkin"
+            onClick={handleCheckin}
+            disabled={checkinLoading}
+          >
+            {checkinLoading ? 'Checking in…' : "I'm Here Now"}
+          </button>
+        )}
         {checkedIn && (
           <Link href={`/city/${citySlug}/${venueId}/chat`} className="btn-chat">
             Chat Room

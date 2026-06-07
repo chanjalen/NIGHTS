@@ -9,7 +9,8 @@ def _recompute_venue_rating(venue):
     agg = venue.ratings.aggregate(avg=Avg("overall"), count=Count("id"))
     venue.overall_rating = round(agg["avg"] or 0, 2)
     venue.total_ratings = agg["count"]
-    venue.save(update_fields=["overall_rating", "total_ratings"])
+    venue.recompute_price()  # sets venue.price_level from Google + rating prices
+    venue.save(update_fields=["overall_rating", "total_ratings", "price_level"])
 
 
 @receiver(post_save, sender=Rating)

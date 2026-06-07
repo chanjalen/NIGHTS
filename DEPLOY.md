@@ -86,8 +86,12 @@ python3 -c "import secrets; print(secrets.token_urlsafe(64))"
 ## 3. Bring up the backend
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
-# api / api-dev run migrations automatically on start (RUN_MIGRATIONS=1).
+docker compose -f docker-compose.prod.yml up -d
+# Services run prebuilt GHCR images (CI builds them; the box only pulls, never
+# builds). api/api-dev run migrations automatically on start (RUN_MIGRATIONS=1).
+# Requires .env.prod, .env.dev AND .env.caddy present + chmod 600 — compose
+# references all three, so a missing file fails EVERY compose command on the box,
+# including CI auto-deploys. Create .env.caddy before main first gets the compose.
 
 # Seed reference data + admin user, per environment:
 docker compose -f docker-compose.prod.yml exec api      python manage.py seed_cities
@@ -109,17 +113,81 @@ push to **`main`** → `api`/`worker`. The box only pulls images (it no longer b
 Manual roll on the box (rarely needed): `docker compose -f docker-compose.prod.yml pull api worker && docker compose -f docker-compose.prod.yml up -d api worker`
 Rollback to an earlier build: `PROD_TAG=sha-<commit> docker compose -f docker-compose.prod.yml up -d api worker`
 
+**Infra changes (Caddyfile / docker-compose.prod.yml) must land on `main`** — the box
+pulls those two files from `main`. The deploy step `git pull origin main`s before
+rolling. Caddy is NOT auto-rolled by CI; after a Caddyfile change, recreate it by
+hand: `docker compose -f docker-compose.prod.yml up -d --force-recreate caddy`.
+
+### Branch workflow
+`main` = prod, `develop` = dev. Never push straight to `main`.
+`feature → merge to develop (auto-deploys dev) → merge develop to main (auto-deploys prod)`.
+Backend deploys only fire on changes under `backend/**` / `docker-compose.prod.yml`
+/ the workflow file (a no-op push won't deploy — use **Actions → Run workflow**).
+
 ---
 
 ## 4. Configure Vercel (frontend)
 
 1. Import the repo; root directory `frontend/`.
-2. Environment variables:
-   - **Production** (apex domain): `NEXT_PUBLIC_API_URL` + `API_URL` =
-     `https://api.findyournights.com`; `NEXT_PUBLIC_WS_URL` = `wss://api.findyournights.com`.
-   - **Dev branch** (`dev.findyournights.com`): the `api-dev.*` / `wss://api-dev.*` values.
+2. Environment variables — scope each to the right environment:
+   - **Production** scope: `NEXT_PUBLIC_API_URL` + `API_URL` = `https://api.findyournights.com`;
+     `NEXT_PUBLIC_WS_URL` = `wss://api.findyournights.com`.
+   - **Preview → branch `develop`** scope: the `https://api-dev.*` / `wss://api-dev.*`
+     values, **plus** `DEV_PROXY_SECRET` (must equal `.env.caddy`'s value — lets Vercel
+     SSR through the api-dev gate) and `NEXT_PUBLIC_CSRF_COOKIE_NAME=csrftoken_dev`.
+   - ⚠️ Never use the **"Production and Preview"** combined scope for the URL vars —
+     it forces one value onto both envs. One Production row + one Preview/develop row.
+   - Keep the URL vars **not Sensitive** so you can eyeball them (Sensitive hides the value).
 3. Domains: `findyournights.com` + `www` → production; `dev.findyournights.com` →
-   the `develop` branch.
+   **bind to the `develop` branch** (Settings → Domains → the domain → Git Branch =
+   `develop`). A domain with no branch binding serves **production** — a common trap.
+4. **Deployment Protection** → Vercel Authentication → **Standard Protection**
+   ("Only Preview Deployments") so `dev.findyournights.com` sits behind a login wall;
+   leave **Production excluded** so the public site stays open.
+
+> **`NEXT_PUBLIC_*` are inlined at BUILD time.** Changing the value in the dashboard
+> does nothing until a *fresh* build runs — and a plain "Redeploy" REUSES the build
+> cache, serving the old baked-in value. To pick up a changed `NEXT_PUBLIC_*`: Redeploy
+> with **"Use existing Build Cache" UNCHECKED** (or push a commit / Clear Build Cache).
+> Verify on the deployment's own `*.vercel.app` URL (rules out domain/edge cache).
+
+---
+
+## 4b. Dev environment privacy (api-dev access gate)
+
+`dev.findyournights.com` is gated two ways so strangers see nothing:
+- **Frontend:** Vercel Deployment Protection (login wall, §4.4).
+- **Backend (`api-dev`):** a Caddy rule (see `Caddyfile`) that 403s unless the request
+  is from an allowlisted IP **or** carries the `X-Dev-Proxy-Secret` header. The secret
+  + allowed IP live in **`.env.caddy`** (gitignored, chmod 600) and are injected into
+  the caddy container; the Caddyfile only references `{$DEV_PROXY_SECRET}`/`{$DEV_ALLOW_IP}`.
+
+`.env.caddy`:
+```
+DEV_ALLOW_IP=<your PUBLIC IPv4>/32      # curl -4 ifconfig.me — NOT a 10.x/192.168 LAN IP
+DEV_PROXY_SECRET=<openssl rand -base64 32>   # same value as Vercel's DEV_PROXY_SECRET
+```
+Who gets through: **you** (allowlisted IP → browser + direct API), **Vercel SSR**
+(secret header), everyone else → 403. Browser client-side calls rely on the IP rule,
+so **when your home IP changes, edit `DEV_ALLOW_IP` and** `up -d --force-recreate caddy`.
+`api-dev.findyournights.com` is IPv4-only (A record), so allowlist your IPv4.
+
+`.env.dev` must also carry the dev frontend origin (CORS/CSRF/host/redirect) and the
+per-env cookie names so dev & prod sessions don't collide under the shared
+`.findyournights.com` cookie domain:
+```
+ALLOWED_HOSTS=api-dev.findyournights.com,dev.findyournights.com
+CORS_ALLOWED_ORIGINS=https://dev.findyournights.com
+CSRF_TRUSTED_ORIGINS=https://dev.findyournights.com
+FRONTEND_URL=https://dev.findyournights.com
+SESSION_COOKIE_DOMAIN=.findyournights.com
+CSRF_COOKIE_DOMAIN=.findyournights.com
+SESSION_COOKIE_NAME=sessionid_dev
+CSRF_COOKIE_NAME=csrftoken_dev
+```
+After editing `.env.dev`, apply it: `docker compose -f docker-compose.prod.yml up -d --force-recreate api-dev worker-dev`.
+
+Quick gate test: `curl -i -H "Origin: https://dev.findyournights.com" -H "X-Dev-Proxy-Secret: $(grep '^DEV_PROXY_SECRET=' .env.caddy | cut -d= -f2-)" https://api-dev.findyournights.com/api/v1/cities/` → 200 + `Access-Control-Allow-Origin`. (Use `cut -d= -f2-`, not `-f2` — the base64 secret ends in `=`.)
 
 ---
 
@@ -151,6 +219,18 @@ Rollback to an earlier build: `PROD_TAG=sha-<commit> docker compose -f docker-co
 - **Isolation:** an action on `dev.findyournights.com` appears only in `nite-dev`.
 - **Security smoke:** generic 404 (DEBUG off), HSTS header present, CORS rejects an
   unknown Origin, `/admin/` requires login.
+
+### Dev environment checks
+- On `dev.findyournights.com`, the "Continue with Google" link points to
+  `api-dev.findyournights.com` (if it shows `api.*`, the build baked the prod URL —
+  see the build-cache note in §4).
+- DevTools → Network: app calls go to `api-dev.*` with no CORS error.
+- From a non-allowlisted IP with no secret: `api-dev` → **403**, and the frontend
+  shows the Vercel login wall.
+- `dev.findyournights.com/robots.txt` → `Disallow: /` (noindex on preview);
+  prod's → `Allow: /`. View-source on dev shows `<meta name="robots" content="noindex">`.
+- Log into dev and prod in the same browser → both stay logged in (distinct
+  `sessionid_dev`/`sessionid` cookies).
 
 ---
 
