@@ -3392,9 +3392,39 @@ video {
 }
 
 @media (max-width: 640px) {
+  /* On mobile the home page's live-ticker is its bottom bar; the footer stacked
+     above it looks cramped, so hide it there (still shown on every other page). */
+  .footer--home {
+    display: none;
+  }
+
+  /* Keep the footer to a single compact row; shrink type so it fits. */
   .footer-inner {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: 18px 0;
+  }
+
+  .footer-logo {
+    font-size: 16px;
+  }
+
+  .footer-nav {
+    gap: 12px;
+  }
+
+  .footer-nav a {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .footer-tagline {
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  /* Drop the tagline tail on narrow screens to keep everything on one line. */
+  .footer-tagline-extra {
+    display: none;
   }
 }
