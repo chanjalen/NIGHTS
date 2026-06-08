@@ -100,6 +100,10 @@ body {
   font-family: var(--font-display), Georgia, 'Times New Roman', serif;
   line-height: 1.6;
   min-height: 100vh;
+  /* Flex column so the footer can be pushed to the bottom on short pages
+     (Header/main/Footer are all direct children of body). */
+  display: flex;
+  flex-direction: column;
   /* Martini cursor (dive-bar flourish). Hotspot at the glass rim. */
   cursor: url('/cursor-martini.svg') 6 7, auto;
 }
@@ -3321,5 +3325,76 @@ video {
   .chat-page.keyboard-open .chat-input-bar {
     padding-top: 8px;
     padding-bottom: 8px;
+  }
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────────────────── */
+.footer {
+  border-top: 1px solid var(--card-border);
+  background: rgba(18, 11, 6, 0.86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  /* Push to the bottom of the flex-column body so short pages (profile, about)
+     keep the footer at the bottom of the viewport, not floating mid-page. */
+  margin-top: auto;
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 28px 0;
+}
+
+/* Home page has a fixed live-ticker (~40px) pinned to the bottom of the
+   viewport; add clearance so the footer content sits above it. */
+.footer--home .footer-inner {
+  padding-bottom: 80px;
+}
+
+.footer-logo {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  line-height: 1;
+}
+
+.footer-logo-dot {
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent), 0 0 22px rgba(255, 59, 59, 0.5);
+}
+
+.footer-nav {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.footer-nav a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.15s ease;
+}
+
+.footer-nav a:hover {
+  color: var(--text);
+}
+
+.footer-tagline {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
   }
 }
