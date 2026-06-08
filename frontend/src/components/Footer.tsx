@@ -36,7 +36,8 @@ export default function Footer() {
           </nav>
 
           <p className="footer-tagline">
-            &copy; {new Date().getFullYear()} Nights — Find your nights.
+            &copy; {new Date().getFullYear()} Nights
+            <span className="footer-tagline-extra"> — Find your nights.</span>
           </p>
         </div>
       </div>

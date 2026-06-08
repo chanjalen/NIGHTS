@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import FluidBackground from '@/components/FluidBackground';
 import Footer from '@/components/Footer';
@@ -45,6 +46,16 @@ export default function RootLayout({
   return (
     <html lang="en" className={bricolage.variable}>
       <body>
+        {/* Google AdSense loader. Production only — never load ads on dev/preview
+            so test traffic can't trip AdSense's invalid-activity detection. */}
+        {process.env.VERCEL_ENV === 'production' && (
+          <Script
+            id="adsbygoogle-init"
+            strategy="afterInteractive"
+            crossOrigin="anonymous"
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4278335662102500"
+          />
+        )}
         <FluidBackground />
         <AuthProvider>
           <PostHogProvider>{children}</PostHogProvider>
