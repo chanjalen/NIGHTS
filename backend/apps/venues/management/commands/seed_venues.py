@@ -16,16 +16,8 @@ FIELD_MASK = ",".join([
     "places.formattedAddress",
     "places.addressComponents",
     "places.location",
-    "places.priceLevel",
     "places.types",
 ])
-
-PRICE_MAP = {
-    "PRICE_LEVEL_INEXPENSIVE": 1,
-    "PRICE_LEVEL_MODERATE": 2,
-    "PRICE_LEVEL_EXPENSIVE": 3,
-    "PRICE_LEVEL_VERY_EXPENSIVE": 4,
-}
 
 METERS_PER_DEGREE_LAT = 111_000
 MILES_TO_METERS = 1609.34
@@ -101,6 +93,12 @@ class Command(BaseCommand):
         parser.add_argument("--radius", type=int, default=40, help="Radius in miles")
         parser.add_argument("--spacing", type=int, default=2000, help="Grid spacing in meters")
         parser.add_argument("--search-radius", type=int, default=1500, help="Search radius per point in meters")
+        parser.add_argument(
+            "--types",
+            default="bar,night_club,pub,wine_bar",
+            help="Comma-separated Places types to search per grid point. "
+                 "Each type is a separate call (its own 20-result cap).",
+        )
         parser.add_argument("--timezone", default="America/Chicago")
         parser.add_argument("--dry-run", action="store_true")
         parser.add_argument("--resume", action="store_true", help="Skip place_ids already in DB")
@@ -122,6 +120,7 @@ class Command(BaseCommand):
         tz = options["timezone"]
         dry_run = options["dry_run"]
         resume = options["resume"]
+        place_types = [t.strip() for t in options["types"].split(",") if t.strip()]
 
         if dry_run:
             self.stdout.write(self.style.WARNING("DRY RUN — no database writes\n"))
@@ -146,7 +145,7 @@ class Command(BaseCommand):
         error_count = 0
 
         for idx, (lat, lng) in enumerate(grid, 1):
-            for place_type in ("bar", "night_club"):
+            for place_type in place_types:
                 try:
                     places = search_nearby(api_key, lat, lng, place_type, search_radius)
                     total_calls += 1
@@ -240,7 +239,6 @@ class Command(BaseCommand):
                 continue
 
             neighborhood = extract_component(components, "neighborhood", "sublocality_level_1") or ""
-            google_price = PRICE_MAP.get(place.get("priceLevel", ""))
 
             venue_defaults = {
                 "name": name,
@@ -248,7 +246,6 @@ class Command(BaseCommand):
                 "neighborhood": neighborhood,
                 "lat": p_lat,
                 "lng": p_lng,
-                "google_price_level": google_price,
                 "timezone": tz,
                 "city": city,
             }
