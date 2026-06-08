@@ -24,6 +24,11 @@ export const metadata: Metadata = {
   ...(process.env.VERCEL_ENV !== 'production'
     ? { robots: { index: false, follow: false } }
     : {}),
+  // AdSense site verification — renders <meta name="google-adsense-account"> in
+  // <head> (where the crawler looks). Production only, same as the loader script.
+  ...(process.env.VERCEL_ENV === 'production'
+    ? { other: { 'google-adsense-account': 'ca-pub-4278335662102500' } }
+    : {}),
 };
 
 // Explicit so mobile browsers always render at device width (1:1 scale) — and so
