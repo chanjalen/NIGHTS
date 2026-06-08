@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque } from 'next/font/google';
 import './globals.css';
 import FluidBackground from '@/components/FluidBackground';
+import Footer from '@/components/Footer';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PostHogProvider } from '@/components/PostHogProvider';
 
@@ -47,6 +48,7 @@ export default function RootLayout({
         <FluidBackground />
         <AuthProvider>
           <PostHogProvider>{children}</PostHogProvider>
+          <Footer />
         </AuthProvider>
       </body>
     </html>
