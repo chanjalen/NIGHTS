@@ -71,8 +71,9 @@ export default function VenueGrid({
     [debouncedSearch, neighborhood, music, crowd, price, minRating, cover]
   );
 
+  const searchActive = !!debouncedSearch.trim();
   const filtersActive =
-    !!debouncedSearch || !!neighborhood || music.length > 0 || crowd.length > 0 ||
+    searchActive || !!neighborhood || music.length > 0 || crowd.length > 0 ||
     price.length > 0 || minRating !== null || cover !== null;
 
   useEffect(() => {
@@ -433,15 +434,26 @@ export default function VenueGrid({
       {venues.length === 0 ? (
         <div className="empty-state">
           <p className="empty-state-title">
-            {filtersActive ? 'No venues found.' : `No venues in ${cityName} yet.`}
+            {searchActive
+              ? `No venues match "${debouncedSearch.trim()}".`
+              : filtersActive
+                ? 'No venues found.'
+                : `No venues in ${cityName} yet.`}
           </p>
           <p>
-            {filtersActive
-              ? 'Try loosening your filters.'
-              : 'Be the first to put it on the map.'}
+            {searchActive
+              ? "Can't find it? Add it below and we'll put it on the map."
+              : filtersActive
+                ? 'Try loosening your filters.'
+                : 'Be the first to put it on the map.'}
           </p>
-          {!filtersActive && (
-            <RequestVenueForm citySlug={citySlug} cityName={cityName} />
+          {(searchActive || !filtersActive) && (
+            <RequestVenueForm
+              key={searchActive ? debouncedSearch.trim() : 'no-search'}
+              citySlug={citySlug}
+              cityName={cityName}
+              initialName={searchActive ? debouncedSearch.trim() : ''}
+            />
           )}
         </div>
       ) : (
