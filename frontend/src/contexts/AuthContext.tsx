@@ -66,15 +66,21 @@ export function login() {
   window.location.href = '/signin';
 }
 
-export function logout() {
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/accounts/logout/`;
-  const csrf = document.createElement('input');
-  csrf.type = 'hidden';
-  csrf.name = 'csrfmiddlewaretoken';
-  csrf.value = getCsrfToken();
-  form.appendChild(csrf);
-  document.body.appendChild(form);
-  form.submit();
+export async function logout() {
+  // Use allauth's headless session-delete via a credentialed fetch rather than a
+  // top-level form POST. A form POST to the API subdomain after the redirect-heavy
+  // signup flow is sent with `Origin: null`, which Django's CSRF Origin check
+  // rejects (403). A fetch always carries the page's real origin.
+  const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  let csrf = getCsrfToken();
+  if (!csrf) {
+    await fetch(`${API}/api/v1/accounts/csrf/`, { credentials: 'include' });
+    csrf = getCsrfToken();
+  }
+  await fetch(`${API}/api/v1/auth/browser/v1/auth/session`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: { 'X-CSRFToken': csrf },
+  }).catch(() => {});
+  window.location.href = '/';
 }

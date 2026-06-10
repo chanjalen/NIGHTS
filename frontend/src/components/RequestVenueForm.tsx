@@ -8,12 +8,14 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export default function RequestVenueForm({
   citySlug,
   cityName,
+  initialName = '',
 }: {
   citySlug: string;
   cityName: string;
+  initialName?: string;
 }) {
   const { user, loading } = useAuth();
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initialName);
   const [address, setAddress] = useState('');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
