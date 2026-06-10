@@ -11,7 +11,7 @@ interface CityPageProps {
 export async function generateMetadata({ params }: CityPageProps) {
   const city = await getCityBySlug(params.citySlug).catch(() => null);
   const name = city?.name ?? params.citySlug;
-  return { title: `${name} Nightlife — NITE` };
+  return { title: `${name} Nightlife — Nights.` };
 }
 
 export default async function CityPage({ params }: CityPageProps) {
