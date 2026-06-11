@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Header from '@/components/Header';
 import VenueGrid from '@/components/VenueGrid';
@@ -18,31 +19,9 @@ export default async function CityPage({ params }: CityPageProps) {
   const { citySlug } = params;
   const city = await getCityBySlug(citySlug).catch(() => null);
 
-  if (!city) {
-    const display = citySlug
-      .split('-')
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
-    return (
-      <>
-        <Header />
-        <main>
-          <div className="container">
-            <div style={{ paddingTop: '48px' }}>
-              <Link href="/popular-cities" className="back-button">
-                <ArrowLeft size={16} />
-                All Cities
-              </Link>
-              <div className="empty-state">
-                <p className="empty-state-title">City not found.</p>
-                <p>We don&apos;t have <strong>{display}</strong> in our database yet.</p>
-              </div>
-            </div>
-          </div>
-        </main>
-      </>
-    );
-  }
+  // Real 404 (via the app not-found boundary) so unknown city URLs don't get
+  // indexed as soft 404s.
+  if (!city) notFound();
 
   const [stats, firstPage] = await Promise.all([
     getCityStats(citySlug).catch(() => ({ venue_count: 0, avg_rating: null, active_checkin_count: 0, neighborhoods: [] })),
