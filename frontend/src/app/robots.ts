@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/site';
 
 // Allow crawling only on the production deployment. Vercel sets VERCEL_ENV to
 // 'production' solely for the production branch (main); preview builds (develop ->
@@ -8,5 +9,6 @@ export default function robots(): MetadataRoute.Robots {
   const isProd = process.env.VERCEL_ENV === 'production';
   return {
     rules: { userAgent: '*', ...(isProd ? { allow: '/' } : { disallow: '/' }) },
+    ...(isProd ? { sitemap: `${SITE_URL}/sitemap.xml` } : {}),
   };
 }

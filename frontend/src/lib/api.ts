@@ -101,6 +101,17 @@ export async function getVenue(id: string): Promise<VenueDetail> {
   return res.json();
 }
 
+export interface SitemapData {
+  cities: string[];
+  venues: { id: string; city_slug: string }[];
+}
+
+export async function getSitemapData(): Promise<SitemapData> {
+  const res = await fetch(`${BASE_URL}/api/v1/venues/sitemap/`, defaultOptions);
+  if (!res.ok) throw new Error(`Failed to fetch sitemap data: ${res.status}`);
+  return res.json();
+}
+
 export async function getRatings(venueId: string): Promise<Rating[]> {
   // Forward the caller's session cookie so the API can flag the user's own
   // rating (is_own). Ratings are otherwise anonymous. Server-only import:
