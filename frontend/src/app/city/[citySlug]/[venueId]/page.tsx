@@ -7,6 +7,7 @@ import VenueActions from '@/components/VenueActions';
 import CleanUrl from '@/components/CleanUrl';
 import RatingsList from '@/components/RatingsList';
 import { getVenue, getRatings } from '@/lib/api';
+import { SITE_URL } from '@/lib/site';
 import { Rating } from '@/types';
 
 interface VenueDetailPageProps {
@@ -17,7 +18,14 @@ interface VenueDetailPageProps {
 export async function generateMetadata({ params }: VenueDetailPageProps) {
   try {
     const venue = await getVenue(params.venueId);
-    return { title: `${venue.name} — NITE` };
+    const rating = parseFloat(venue.overall_rating);
+    const ratingPart = !isNaN(rating) && venue.total_ratings > 0
+      ? `Rated ${rating.toFixed(1)}/5 from ${venue.total_ratings} ${venue.total_ratings === 1 ? 'rating' : 'ratings'}.`
+      : 'See ratings, vibe, and who’s there tonight.';
+    return {
+      title: `${venue.name} — NITE`,
+      description: `${venue.name}${venue.neighborhood ? ` in ${venue.neighborhood}` : ''}, ${venue.city_name}. ${ratingPart}`,
+    };
   } catch {
     return { title: 'Venue — NITE' };
   }
@@ -78,8 +86,46 @@ export default async function VenueDetailPage({ params, searchParams }: VenueDet
   const rating = parseFloat(venue.overall_rating);
   const displayRating = isNaN(rating) ? null : rating.toFixed(1);
 
+  // BarOrPub structured data → rich results (star snippets) in search.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BarOrPub',
+    name: venue.name,
+    url: `${SITE_URL}/city/${citySlug}/${venueId}`,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: venue.address,
+      addressLocality: venue.city_name,
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: venue.lat,
+      longitude: venue.lng,
+    },
+    ...(venue.photo_url ? { image: venue.photo_url } : {}),
+    ...(venue.price_level ? { priceRange: '$'.repeat(venue.price_level) } : {}),
+    ...(displayRating && venue.total_ratings > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: displayRating,
+            ratingCount: venue.total_ratings,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        // Escape "<" so a venue name can't break out of the script tag.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
+        }}
+      />
       {fromProfile && <CleanUrl params={['from']} />}
       <Header />
       <main>
