@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, Users } from 'lucide-react';
 import Header from '@/components/Header';
 import StarRating from '@/components/StarRating';
@@ -53,35 +54,9 @@ export default async function VenueDetailPage({ params, searchParams }: VenueDet
     }
   }
 
-  if (!venue) {
-    return (
-      <>
-        {fromProfile && <CleanUrl params={['from']} />}
-        <Header />
-        <main>
-          <div className="container">
-            <div style={{ paddingTop: '48px' }}>
-              {fromProfile ? (
-                <Link href="/profile" className="back-button">
-                  <ArrowLeft size={16} />
-                  Profile
-                </Link>
-              ) : (
-                <Link href={`/city/${citySlug}`} className="back-button">
-                  <ArrowLeft size={16} />
-                  Back
-                </Link>
-              )}
-              <div className="empty-state">
-                <p className="empty-state-title">Venue not found.</p>
-                <p>This venue may have been removed or the link is invalid.</p>
-              </div>
-            </div>
-          </div>
-        </main>
-      </>
-    );
-  }
+  // Real 404 (via the app not-found boundary) so removed/invalid venue URLs
+  // don't get indexed as soft 404s.
+  if (!venue) notFound();
 
   const rating = parseFloat(venue.overall_rating);
   const displayRating = isNaN(rating) ? null : rating.toFixed(1);
