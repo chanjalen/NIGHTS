@@ -311,7 +311,7 @@ textarea {
 
 .section-title {
   font-family: var(--font-display);
-  font-style: italic;
+  font-style: normal;
   font-size: clamp(34px, 5.5vw, 58px);
   font-weight: 700;
   text-transform: none;
@@ -364,21 +364,81 @@ textarea {
 }
 
 /* ─── Grids ──────────────────────────────────────────────────────────────────── */
+/* 3-across at every width — phones keep the desktop rhythm with condensed
+   cards (below). */
 .grid-3 {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 767px) {
   .grid-3 {
-    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
-}
 
-@media (min-width: 1024px) {
-  .grid-3 {
-    grid-template-columns: repeat(3, 1fr);
+  .grid-3 .card {
+    padding: 12px 10px;
+  }
+
+  /* City cards: smaller type, no arrow (no room at ~110px wide). */
+  .grid-3 .city-card {
+    gap: 14px;
+    min-height: 0;
+  }
+
+  .grid-3 .city-card-name {
+    font-size: 14px;
+    line-height: 1.15;
+  }
+
+  .grid-3 .city-card-arrow {
+    display: none;
+  }
+
+  .grid-3 .city-card-num {
+    font-size: 15px;
+  }
+
+  .grid-3 .city-card-count {
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    gap: 4px;
+  }
+
+  /* Venue cards: condensed type, scaled-down stars/badges. */
+  .grid-3 .venue-card-name {
+    font-size: 13px;
+    line-height: 1.15;
+  }
+
+  .grid-3 .venue-card-neighborhood {
+    font-size: 9px;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .grid-3 .venue-card-rating-row {
+    gap: 6px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .grid-3 .venue-card-rating-num {
+    font-size: 14px;
+  }
+
+  .grid-3 .venue-card-rating-count {
+    font-size: 9px;
+  }
+
+  .grid-3 .venue-card-footer {
+    margin-top: 8px;
+  }
+
+  .grid-3 .badge {
+    font-size: 9px;
+    padding: 2px 6px;
   }
 }
 
@@ -436,13 +496,14 @@ textarea {
 
 .city-head-name {
   margin-bottom: 16px;
-  color: #fff6ec;
+  /* Hero-caps treatment, like "FIND YOUR" on the home page. */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.015em;
+  color: #efe5d0;
   text-shadow:
-    0 0 2px rgba(255, 255, 255, 0.95),
-    0 0 10px rgba(255, 241, 224, 0.6),
-    0 0 22px rgba(255, 206, 150, 0.42),
-    0 0 40px rgba(255, 170, 92, 0.25);
-  animation: neon-buzz 7s steps(1) infinite;
+    0 3px 0 rgba(0, 0, 0, 0.35),
+    0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1334,18 +1395,17 @@ body:has(.hero) .header {
 .venue-name {
   font-family: var(--font-display);
   font-size: clamp(40px, 7vw, 76px);
-  font-weight: 800;
-  letter-spacing: 0;
+  /* Hero-caps treatment, like "FIND YOUR" on the home page. */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.015em;
   line-height: 1;
   margin-bottom: 16px;
   text-wrap: balance;
-  color: #fff6ec;
+  color: #efe5d0;
   text-shadow:
-    0 0 2px rgba(255, 255, 255, 0.95),
-    0 0 10px rgba(255, 241, 224, 0.6),
-    0 0 22px rgba(255, 206, 150, 0.42),
-    0 0 40px rgba(255, 170, 92, 0.25);
-  animation: neon-buzz 7s steps(1) infinite;
+    0 3px 0 rgba(0, 0, 0, 0.35),
+    0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1845,26 +1905,34 @@ body:has(.hero) .header {
   line-height: 1.5;
 }
 
-/* Neon-sign treatment for page titles — same two-tone tubes + flicker as the
-   hero tagline (white "Popular"/"About", red "Cities"/"Nights"). */
+/* Page titles speak the hero's language (docs/b.png): cream serif caps for
+   the plain words ("Popular"/"About"), red neon script for the accent
+   ("Cities"/"Nights"). */
 .page-title-section .section-title span {
   display: block;
-  color: #fff6ec;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.015em;
+  color: #efe5d0;
   text-shadow:
-    0 0 2px rgba(255, 255, 255, 0.95),
-    0 0 10px rgba(255, 241, 224, 0.6),
-    0 0 22px rgba(255, 206, 150, 0.42),
-    0 0 40px rgba(255, 170, 92, 0.25);
-  animation: neon-buzz 7s steps(1) infinite;
+    0 3px 0 rgba(0, 0, 0, 0.35),
+    0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
 .page-title-section .section-title span.accent-line {
-  color: #ff5252;
+  font-family: var(--font-hero-script), cursive;
+  font-size: 1.25em;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1;
+  color: #ff8e80;
   text-shadow:
-    0 0 4px rgba(255, 220, 220, 0.9),
-    0 0 12px rgba(255, 59, 59, 0.9),
-    0 0 26px rgba(255, 59, 59, 0.7),
-    0 0 50px rgba(255, 59, 59, 0.42);
+    0 0 2px rgba(197, 47, 47, 0.9),
+    0 0 7px rgba(185, 35, 35, 0.95),
+    0 0 14px rgba(185, 35, 35, 0.85),
+    0 0 30px rgba(185, 35, 35, 0.7),
+    0 0 62px rgba(185, 35, 35, 0.5);
   animation: neon-flicker 9s steps(1) infinite;
   animation-delay: -2.4s;
 }
