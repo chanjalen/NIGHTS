@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Bricolage_Grotesque } from 'next/font/google';
+import { Sacramento } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import FluidBackground from '@/components/FluidBackground';
@@ -7,12 +7,13 @@ import Footer from '@/components/Footer';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PostHogProvider } from '@/components/PostHogProvider';
 
-// Single type family across the whole UI. Variable font (weights 200–800), so
-// we omit `weight` to load the full axis. Exposed as --font-display; globals.css
-// maps the other legacy font variables to it.
-const bricolage = Bricolage_Grotesque({
+// The UI face is system Times New Roman (set as --font-display in
+// globals.css), so the only webfont is the hero's neon script for "Nights"
+// (see docs/b.png).
+const sacramento = Sacramento({
   subsets: ['latin'],
-  variable: '--font-display',
+  weight: '400',
+  variable: '--font-hero-script',
   display: 'swap',
 });
 
@@ -49,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={bricolage.variable}>
+    <html lang="en" className={sacramento.variable}>
       <body>
         {/* Google AdSense loader. Production only — never load ads on dev/preview
             so test traffic can't trip AdSense's invalid-activity detection. */}
