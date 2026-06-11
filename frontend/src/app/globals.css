@@ -1,5 +1,7 @@
 /* ─── Custom Properties ─────────────────────────────────────────────────────── */
 :root {
+  /* Single type family across the whole UI (system serif, no webfont). */
+  --font-display: 'Times New Roman', Times;
   --bg: #060509;
   --bg-deep: #020104;
   --bg-surface: #0e0c16;
@@ -18,58 +20,28 @@
   --card-hover-border: rgba(255, 59, 59, 0.45);
 }
 
-/* ─── Background: dark dive-bar wood paneling ────────────────────────────────── */
+/* ─── Background: dark green snakeskin wall (every page except home) ─────────── */
 .fluid-bg {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-color: #1b110b;
+  background-color: #0c0f0a;
   overflow: hidden;
   pointer-events: none;
 }
 
-.bg-wood {
+.bg-wall {
   position: absolute;
   inset: 0;
-  background-image:
-    /* fine scratches / scuffs */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='340' height='300'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.03 0.9' numOctaves='2' seed='14' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E"),
-    /* dark grain streaks */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='540' height='250'%3E%3Cfilter id='d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.5' numOctaves='5' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.62 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E"),
-    /* light grain streaks (worn highlights) */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='300'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.013 0.55' numOctaves='4' seed='21' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E"),
-    /* large worn / darkened patches (age) */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='620'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.02' numOctaves='3' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E"),
-    /* plank grooves with a thin top bevel highlight */
-    repeating-linear-gradient(
-      180deg,
-      rgba(255, 245, 225, 0.05) 0px,
-      rgba(255, 255, 255, 0) 2px,
-      rgba(255, 255, 255, 0) 51px,
-      rgba(0, 0, 0, 0.5) 52px,
-      rgba(0, 0, 0, 0.78) 54px,
-      rgba(0, 0, 0, 0.5) 55px
-    ),
-    /* three-plank tone cycle so boards don't all match */
-    repeating-linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.025) 0px,
-      rgba(255, 255, 255, 0.025) 55px,
-      rgba(0, 0, 0, 0.07) 55px,
-      rgba(0, 0, 0, 0.07) 110px,
-      rgba(255, 235, 210, 0.045) 110px,
-      rgba(255, 235, 210, 0.045) 165px
-    ),
-    /* warm base depth */
-    linear-gradient(180deg, #2c1b10 0%, #150c07 100%);
-  background-size:
-    340px 300px,
-    540px 250px,
-    700px 300px,
-    900px 620px,
-    100% 55px,
-    100% 165px,
-    100% 100%;
+  /* Lit like the home photo: the raw texture is a cold green, so a warm
+     amber lamp-pool up top + a warm brown darkening gradient (same tone as
+     the home hero's overlay) shift it toward the same olive, tungsten-lit
+     vibe. cover keeps it filling any viewport (desktop or portrait mobile);
+     the fixed parent means it never scrolls away. */
+  background:
+    radial-gradient(ellipse 75% 50% at 50% 0%, rgba(255, 160, 80, 0.12), transparent 70%),
+    linear-gradient(rgba(18, 11, 6, 0.4), rgba(18, 11, 6, 0.65)),
+    url('/wall-bg.jpg') center / cover no-repeat;
 }
 
 .bg-vignette {
@@ -760,10 +732,37 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(18, 11, 6, 0.86);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--card-border);
+  /* Transparent over the wall background on every page (the wall layer is
+     fixed, so the header always sits on texture, not on page content). A
+     soft top-down scrim keeps nav legible when content scrolls beneath. */
+  background: linear-gradient(rgba(10, 8, 5, 0.55), rgba(10, 8, 5, 0));
+}
+
+/* Home page only: every component resolves its face through --font-display,
+   so overriding the variable here flips the whole screen (header, search,
+   buttons, ticker) to the headline's serif. Other pages are untouched. */
+body:has(.hero) {
+  /* The hero photo is this page's backdrop; matches its bottom fade color
+     where the (shorter, mobile) hero ends. */
+  background: #120b06;
+}
+
+/* Hide the site-wide wood paneling on the home page — on tall/portrait
+   screens the hero doesn't fill the viewport and the wood peeked through
+   below it. */
+body:has(.hero) .fluid-bg {
+  display: none;
+}
+
+/* Home page only: the hero photo runs underneath the header, so drop the
+   header's dark fill/blur/border there — otherwise it hides the top of the
+   photo (e.g. the hanging light). The page doesn't scroll, so the header
+   never needs its own backdrop on this screen. */
+body:has(.hero) .header {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom-color: transparent;
 }
 
 .header-inner {
@@ -1008,15 +1007,34 @@ textarea {
 /* ─── Hero (editorial poster) ────────────────────────────────────────────────── */
 .hero {
   position: relative;
-  /* Fill the viewport minus the sticky header (91px) so the page doesn't scroll. */
-  min-height: calc(100vh - 91px);
+  /* Pulled up under the sticky header (91px) so the background photo runs to
+     the top of the viewport behind the translucent header, then padded back
+     down so the content still clears it. Total height stays 100vh — no scroll. */
+  min-height: 100vh;
+  margin-top: -91px;
   display: flex;
   flex-direction: column;
   /* Center the content block in the space above the fixed ticker. */
   justify-content: center;
   overflow: hidden;
-  padding-top: 8px;
+  padding-top: 99px;
   padding-bottom: 56px;
+}
+
+/* Dive-bar wall photo behind the hero, darkened so the neon headline and
+   search form stay legible over the busier parts of the image. */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Fit the photo's full width (no side crop), anchored to the top so the
+     hanging light stays in frame; the bottom fade hides the seam where the
+     photo ends on taller windows. */
+  background:
+    linear-gradient(rgba(18, 11, 6, 0.15), rgba(18, 11, 6, 0.4)),
+    linear-gradient(to bottom, transparent 72%, #120b06 96%),
+    url('/hero-bg.png') top center / 100% auto no-repeat;
+  background-color: #120b06;
 }
 
 .hero > .container {
@@ -1067,43 +1085,72 @@ textarea {
 }
 
 .hero-tagline {
-  font-family: var(--font-display), serif;
-  font-style: italic;
-  font-size: clamp(54px, 9vw, 148px);
-  font-weight: 800;
-  text-transform: none;
-  letter-spacing: -0.01em;
-  line-height: 0.9;
-  color: var(--text);
+  /* Tight sign lockup (docs/b.png): the h1 hugs the width of "FIND YOUR" and
+     the script centers inside it, so the two lines read as one unit. */
+  font-size: clamp(44px, 7.2vw, 116px);
+  line-height: 0.92;
   padding: 0;
+  white-space: nowrap;
+  width: fit-content;
 }
 
-/* Neon-sign treatment: warm white tubes for "Find Your", red for "Night",
-   each on its own irregular flicker so they never buzz in sync. */
+/* Bar-sign pairing (docs/b.png): "FIND YOUR" in matte cream serif caps, like
+   paint on the wall; "Nights" as a red neon script tube below it. */
 .hero-tagline span {
   display: block;
-  color: #fff6ec;
+  font-family: 'Times New Roman', Times, serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.015em;
+  color: #efe5d0;
   text-shadow:
-    0 0 2px rgba(255, 255, 255, 0.95),
-    0 0 12px rgba(255, 241, 224, 0.65),
-    0 0 26px rgba(255, 206, 150, 0.45),
-    0 0 54px rgba(255, 170, 92, 0.28);
-  animation: neon-buzz 7s steps(1) infinite;
+    0 3px 0 rgba(0, 0, 0, 0.35),
+    0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
 .hero-tagline span.accent-line {
-  color: #ff5252;
+  font-family: var(--font-hero-script), cursive;
+  /* Bigger than the caps, like the reference — the script is the hero.
+     (em compensates for the larger base size so "Nights" stays put.) */
+  font-size: 1.65em;
+  /* Nudged just slightly off-center to the right. */
+  transform: translateX(0.12em);
+  text-align: center;
+  text-transform: none;
+  letter-spacing: 0;
+  /* Full line-height + a little gap so the script's tall ascenders don't
+     cross into the caps line above. */
+  line-height: 1.05;
+  margin-top: 0.04em;
+  /* Real-neon model: the thin glyph stroke is the tube's hot core (light
+     warm red), and the saturated red comes from the tight glow around it —
+     no text-stroke, so the letterforms keep their natural monoline width. */
+  color: #ff8e80;
   text-shadow:
-    0 0 4px rgba(255, 220, 220, 0.9),
-    0 0 14px rgba(255, 59, 59, 0.95),
-    0 0 30px rgba(255, 59, 59, 0.75),
-    0 0 62px rgba(255, 59, 59, 0.5),
-    0 0 96px rgba(255, 59, 59, 0.32);
+    0 0 2px rgba(197, 47, 47, 0.9),
+    0 0 7px rgba(185, 35, 35, 0.95),
+    0 0 14px rgba(185, 35, 35, 0.85),
+    0 0 30px rgba(185, 35, 35, 0.7),
+    0 0 62px rgba(185, 35, 35, 0.5),
+    0 0 96px rgba(185, 35, 35, 0.32);
   animation: neon-flicker 9s steps(1) infinite;
   animation-delay: -2.4s;
 }
 
-/* "Night" — the buzzier tube. */
+/* Underline swoosh — one more tube on the same circuit (inherits the word's
+   color and flicker). Sized relative to the script above it. */
+.neon-swoosh {
+  display: block;
+  width: 52%;
+  margin: -0.1em auto 0;
+  overflow: visible;
+  filter:
+    drop-shadow(0 0 2px rgba(197, 47, 47, 0.9))
+    drop-shadow(0 0 10px rgba(185, 35, 35, 0.8))
+    drop-shadow(0 0 28px rgba(185, 35, 35, 0.45));
+}
+
+/* "Nights" — the buzzy tube. */
 @keyframes neon-flicker {
   0%, 100%   { opacity: 1; }
   89%        { opacity: 1; }
@@ -1115,7 +1162,7 @@ textarea {
   96%        { opacity: 1; }
 }
 
-/* "Find Your" — steadier, just the occasional dip. */
+/* Warm-white tubes elsewhere in the UI — steadier, just the occasional dip. */
 @keyframes neon-buzz {
   0%, 100%   { opacity: 1; }
   40%        { opacity: 1; }
@@ -1142,10 +1189,17 @@ textarea {
 }
 
 .hero-desc {
+  /* Matches the headline's serif voice; each span is its own line — setup
+     on the first, payoff on the second. */
+  font-family: 'Times New Roman', Times, serif;
   font-size: clamp(18px, 2.4vw, 24px);
   color: var(--text-dim);
-  line-height: 1.55;
+  line-height: 1.5;
   max-width: 42ch;
+}
+
+.hero-desc span {
+  display: block;
 }
 
 .hero-desc b {
@@ -3177,15 +3231,30 @@ video {
   }
 
   /* ── Hero (home) ── Don't force full viewport height on a phone; just let it
-     breathe and leave room for the fixed bottom ticker. */
+     breathe and leave room for the fixed bottom ticker. Header is shorter here
+     (60px inner ≈ 81px total), so the under-header pull shrinks to match. */
   .hero {
-    min-height: auto;
-    padding-top: 32px;
-    padding-bottom: 92px;
+    /* Fill the phone screen so the photo runs all the way to the ticker
+       (dvh tracks the browser chrome; vh fallback for older browsers). */
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin-top: -81px;
+    padding-top: 113px;
+    /* Heavier bottom padding floats the centered content block up a bit. */
+    padding-bottom: 160px;
+  }
+
+  /* Portrait screens: width-fit leaves the photo as a short strip at the
+     top, so fill the hero instead and let the sides crop. */
+  .hero::before {
+    background:
+      linear-gradient(rgba(18, 11, 6, 0.15), rgba(18, 11, 6, 0.4)),
+      url('/hero-bg.png') center top / cover no-repeat;
   }
 
   .hero-tagline {
-    font-size: clamp(46px, 15vw, 96px);
+    /* Sized so the nowrap "FIND YOUR" fits a narrow portrait screen. */
+    font-size: clamp(34px, 12vw, 80px);
   }
 
   /* ── City list ── */
@@ -3350,8 +3419,20 @@ video {
 
 /* Home page has a fixed live-ticker (~40px) pinned to the bottom of the
    viewport; add clearance so the footer content sits above it. */
+.footer--home {
+  /* Seamless against the hero photo's fade-out — no divider line, no own
+     fill; the text just sits on the page's dark backdrop. */
+  border-top: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .footer--home .footer-inner {
-  padding-bottom: 80px;
+  /* Sit the row low in the footer band: most of the old 80px bottom gap
+     (ticker clearance) moves above the text instead. */
+  padding-top: 52px;
+  padding-bottom: 56px;
 }
 
 .footer-logo {
