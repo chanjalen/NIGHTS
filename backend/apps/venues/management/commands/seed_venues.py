@@ -73,6 +73,15 @@ def extract_component(address_components, *target_types):
     return None
 
 
+def extract_component_short(address_components, *target_types):
+    """Like extract_component but prefers the short form (e.g. 'IL')."""
+    for target_type in target_types:
+        for comp in address_components:
+            if target_type in comp.get("types", []):
+                return comp.get("shortText") or comp.get("longText")
+    return None
+
+
 def make_slug(name, city_id, existing_slugs):
     base = (slugify(name) or "venue")[:46]  # leave room for -NNN dedup suffix
     slug = base
@@ -215,7 +224,17 @@ class Command(BaseCommand):
                 no_city += 1
                 continue
 
-            city_slug = slugify(locality)
+            # Resolve cities by their Census-style slug (chicago-il) first;
+            # seed_cities renames bare-slug cities to that form, so looking up
+            # the bare slug alone re-creates duplicates. The bare slug remains
+            # as a fallback for unincorporated places (state == "") the Census
+            # file doesn't carry.
+            state = extract_component_short(
+                components, "administrative_area_level_1"
+            ) or ""
+            stateful_slug = slugify(f"{locality}-{state}") if state else ""
+            bare_slug = slugify(locality)
+            city_slug = stateful_slug or bare_slug
             if not city_slug:
                 no_city += 1
                 continue
@@ -225,13 +244,19 @@ class Command(BaseCommand):
             p_lng = location.get("longitude", center_lng)
 
             if city_slug not in city_cache:
-                city, city_created = City.objects.get_or_create(
-                    slug=city_slug,
-                    defaults={"name": locality, "lat": p_lat, "lng": p_lng},
-                )
-                city_cache[city_slug] = city
-                if city_created:
+                city = City.objects.filter(slug=city_slug).first()
+                if city is None and stateful_slug and bare_slug:
+                    city = City.objects.filter(slug=bare_slug, state="").first()
+                if city is None:
+                    city = City.objects.create(
+                        slug=city_slug,
+                        name=locality,
+                        state=state,
+                        lat=p_lat,
+                        lng=p_lng,
+                    )
                     created_cities += 1
+                city_cache[city_slug] = city
             city = city_cache[city_slug]
 
             name = place.get("displayName", {}).get("text", "")
