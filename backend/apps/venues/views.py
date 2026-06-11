@@ -2,7 +2,10 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
+from apps.cities.models import City
 from .models import Venue, VenueRequest
 from .serializers import (
     VenueListSerializer,
@@ -58,6 +61,22 @@ class VenueDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         return _annotated_queryset()
+
+
+class VenueSitemapView(APIView):
+    """Flat URL inventory for the frontend's sitemap.xml — one unpaginated
+    call instead of paging the venue list per city (232 cities / 1000s of
+    venues would blow past Vercel's function timeout)."""
+
+    def get(self, request):
+        cities = list(
+            City.objects.filter(venue_count__gt=0).values_list("slug", flat=True)
+        )
+        venues = [
+            {"id": str(venue_id), "city_slug": city_slug}
+            for venue_id, city_slug in Venue.objects.values_list("id", "city__slug")
+        ]
+        return Response({"cities": cities, "venues": venues})
 
 
 class VenueRequestCreateView(generics.CreateAPIView):
