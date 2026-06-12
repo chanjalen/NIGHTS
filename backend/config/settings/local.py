@@ -2,7 +2,7 @@ from .base import *
 
 DEBUG = True
 
-LOGIN_REDIRECT_URL = "http://localhost:3000"
+LOGIN_REDIRECT_URL = "http://localhost:3000/signin"
 LOGOUT_REDIRECT_URL = "http://localhost:3000"
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http"
 

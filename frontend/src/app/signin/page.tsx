@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, consumePostLoginNext } from '@/contexts/AuthContext';
 import { login, signup, resendVerification, firstError } from '@/lib/auth';
 
 function GoogleLogo() {
@@ -35,9 +35,12 @@ export default function SignInPage() {
   // email-verified — unlocks the "resend verification link" action.
   const [pendingVerify, setPendingVerify] = useState(false);
 
+  // Single post-auth exit point: every flow (email login, Google OAuth via
+  // the backend's LOGIN_REDIRECT_URL) lands here once authenticated, then
+  // bounces to wherever the user was before signing in.
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/');
+      router.replace(consumePostLoginNext());
     }
   }, [user, loading, router]);
 
@@ -89,10 +92,11 @@ export default function SignInPage() {
         ? await login(email, password)
         : await signup(email, password);
 
-      // Logged in (verified user logging in).
+      // Logged in (verified user logging in). The auth-redirect effect above
+      // navigates once refetch() populates the user, so it stays the single
+      // consumer of the stored post-login destination.
       if (res.ok && res.body?.meta?.is_authenticated) {
         refetch();
-        router.replace('/');
         return;
       }
 

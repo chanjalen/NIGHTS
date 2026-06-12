@@ -21,7 +21,20 @@ interface LocalMedia {
   kind: MediaKind;
 }
 
-const MUSIC_TAGS = ['Hip-Hop', 'EDM', 'R&B', 'Pop', 'Latin', 'Country', 'Other'];
+const MUSIC_TAGS = [
+  'Hip-Hop',
+  'House',
+  'EDM',
+  'Pop',
+  'Throwbacks',
+  'R&B',
+  'Latin',
+  'Rock/Indie',
+  'Country',
+  'Live Music',
+  'Background/Jukebox',
+  'Other',
+];
 const CROWD_TAGS = ['Chill', 'Rowdy', 'College', 'Upscale', 'Local', 'Other'];
 const DAYS = [
   { v: 'MON', l: 'Mon' },
@@ -132,6 +145,21 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
         if (list.some((c) => c.user_id === user.id)) {
           setCheckedIn(true);
         }
+      })
+      .catch(() => {});
+  }, [user, venueId, API]);
+
+  // On mount, check if the current user already rated this venue so the Rate
+  // button reflects it instead of letting them refill the form into a server
+  // "already rated" error.
+  useEffect(() => {
+    if (!user) return;
+    fetch(`${API}/api/v1/ratings/?venue=${venueId}`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const list: { is_own: boolean }[] = data.results ?? data ?? [];
+        if (list.some((r) => r.is_own)) setSubmitted(true);
       })
       .catch(() => {});
   }, [user, venueId, API]);
@@ -249,20 +277,17 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!overall) { setError('Please select your overall rating.'); return; }
-    if (!dayOfWeek) { setError('Please select the day you visited.'); return; }
-    if (!priceLevel) { setError('Please select a price level.'); return; }
-    if (!musicTags.length) { setError('Please select at least one music vibe.'); return; }
+    // Only stars + would-return are required; surface every problem at once.
+    const problems: string[] = [];
+    if (!overall) problems.push('Select your overall rating.');
+    if (wouldGoBack === null) problems.push('Answer "Would you return?"');
     if (musicTags.includes('Other') && !customMusic.trim()) {
-      setError('Please describe the music for "Other".'); return;
+      problems.push('Describe the music for "Other".');
     }
-    if (!crowdTags.length) { setError('Please select at least one crowd vibe.'); return; }
     if (crowdTags.includes('Other') && !customCrowd.trim()) {
-      setError('Please describe the crowd for "Other".'); return;
+      problems.push('Describe the crowd for "Other".');
     }
-    if (hasCover === null) { setError('Please answer whether there was a cover charge.'); return; }
-    if (hasCover && !coverAmount) { setError('Please enter the cover amount.'); return; }
-    if (wouldGoBack === null) { setError('Please answer "Would you return?"'); return; }
+    if (problems.length) { setError(problems.join(' ')); return; }
     setError('');
     setSubmitting(true);
 
@@ -283,8 +308,8 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
       would_go_back: wouldGoBack,
       music_tags: finalMusicTags,
       crowd_tags: finalCrowdTags,
-      has_cover: hasCover ?? false,
     };
+    if (hasCover !== null) body.has_cover = hasCover;
     if (dayOfWeek) body.day_of_week = dayOfWeek;
     if (priceLevel) body.price_level = priceLevel;
     if (hasCover && coverAmount) body.cover_amount = parseFloat(coverAmount);
@@ -423,9 +448,7 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
               </div>
 
               <div className="rf-group">
-                <label className="rf-label">
-                  Day Visited <span className="rf-required">*</span>
-                </label>
+                <label className="rf-label">Day Visited</label>
                 <div className="chip-row">
                   {DAYS.map((d) => (
                     <button
@@ -441,9 +464,7 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
               </div>
 
               <div className="rf-group">
-                <label className="rf-label">
-                  Price Level <span className="rf-required">*</span>
-                </label>
+                <label className="rf-label">Price Level</label>
                 <div className="chip-row">
                   {[1, 2, 3, 4].map((n) => (
                     <button
@@ -459,9 +480,7 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
               </div>
 
               <div className="rf-group">
-                <label className="rf-label">
-                  Music Vibe <span className="rf-required">*</span>
-                </label>
+                <label className="rf-label">Music Vibe</label>
                 <div className="chip-row">
                   {MUSIC_TAGS.map((tag) => (
                     <button
@@ -488,9 +507,7 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
               </div>
 
               <div className="rf-group">
-                <label className="rf-label">
-                  Crowd Vibe <span className="rf-required">*</span>
-                </label>
+                <label className="rf-label">Crowd Vibe</label>
                 <div className="chip-row">
                   {CROWD_TAGS.map((tag) => (
                     <button
@@ -517,9 +534,7 @@ export default function VenueActions({ venueId, citySlug }: { venueId: string; c
               </div>
 
               <div className="rf-group">
-                <label className="rf-label">
-                  Cover Charge <span className="rf-required">*</span>
-                </label>
+                <label className="rf-label">Cover Charge</label>
                 <div className="chip-row">
                   <button
                     type="button"
