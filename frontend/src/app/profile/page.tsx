@@ -8,7 +8,7 @@ import Header from '@/components/Header';
 import StarRating from '@/components/StarRating';
 import RatingMediaGallery from '@/components/RatingMediaGallery';
 import type { RatingMedia } from '@/types';
-import { useAuth, logout } from '@/contexts/AuthContext';
+import { useAuth, login, logout } from '@/contexts/AuthContext';
 
 interface ProfileRating {
   id: string;
@@ -76,7 +76,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      router.replace('/signin');
+      login();
       return;
     }
     fetch(`${API}/api/v1/accounts/profile/`, { credentials: 'include' })

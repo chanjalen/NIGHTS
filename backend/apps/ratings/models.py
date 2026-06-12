@@ -37,7 +37,9 @@ class Rating(models.Model):
     crowd_tags = ArrayField(
         models.CharField(max_length=50), default=list, blank=True
     )
-    has_cover = models.BooleanField(default=False)
+    # Nullable: null = the rater skipped the question, False = explicitly "no
+    # cover". Old rows predate this and were always answered.
+    has_cover = models.BooleanField(null=True, blank=True, default=None)
     cover_amount = models.DecimalField(
         max_digits=6, decimal_places=2, null=True, blank=True
     )
