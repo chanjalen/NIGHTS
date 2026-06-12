@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Send, Paperclip, X, Flag } from 'lucide-react';
-import { useAuth, getCsrfToken } from '@/contexts/AuthContext';
+import { useAuth, getCsrfToken, login } from '@/contexts/AuthContext';
 import {
   kindOf,
   validateFile,
@@ -109,7 +109,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      router.replace('/signin');
+      login();
       return;
     }
 
@@ -154,7 +154,7 @@ export default function ChatPage() {
         wsRef.current = null;
 
         if (e.code === 4001) {
-          router.replace('/signin');
+          login();
           return;
         }
         if (e.code === 4003) {

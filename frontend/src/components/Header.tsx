@@ -39,7 +39,7 @@ export default function Header() {
         </div>
       </Link>
     ) : (
-      <button className="header-signin" onClick={login}>
+      <button className="header-signin" onClick={() => login()}>
         Sign In
       </button>
     )

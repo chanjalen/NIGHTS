@@ -75,30 +75,3 @@ class RatingSerializer(serializers.ModelSerializer):
                 f"You can attach at most {settings.MEDIA_MAX_FILES_PER_RATING} files."
             )
         return value
-
-    def validate_music_tags(self, value):
-        if not value:
-            raise serializers.ValidationError(
-                "Please select at least one music vibe."
-            )
-        return value
-
-    def validate_crowd_tags(self, value):
-        if not value:
-            raise serializers.ValidationError(
-                "Please select at least one crowd vibe."
-            )
-        return value
-
-    def validate(self, attrs):
-        # has_cover defaults to False at the model level, so distinguish an
-        # explicit answer from an omitted one using the raw payload.
-        if "has_cover" not in self.initial_data:
-            raise serializers.ValidationError(
-                {"has_cover": "Please answer whether there was a cover charge."}
-            )
-        if attrs.get("has_cover") and attrs.get("cover_amount") is None:
-            raise serializers.ValidationError(
-                {"cover_amount": "Please enter the cover amount."}
-            )
-        return attrs

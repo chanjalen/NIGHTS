@@ -20,8 +20,9 @@ ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 
 # allauth's HTML flows (Google OAuth callback, the logout form POST) redirect
 # here when finished. Without this they fall back to "/" on the API domain, which
-# 404s — send them back to the frontend instead.
-LOGIN_REDIRECT_URL = FRONTEND_URL
+# 404s — send them back to the frontend instead. Login lands on /signin, which
+# bounces the now-authed user to the page they were on before signing in.
+LOGIN_REDIRECT_URL = f"{FRONTEND_URL}/signin"
 LOGOUT_REDIRECT_URL = FRONTEND_URL
 
 CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
