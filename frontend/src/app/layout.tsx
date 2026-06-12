@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Sacramento } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
+import { SITE_URL } from '@/lib/site';
 import FluidBackground from '@/components/FluidBackground';
 import Footer from '@/components/Footer';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -18,8 +19,19 @@ const sacramento = Sacramento({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: 'Nights',
   description: 'Real ratings from people who were actually there. Find where to go tonight.',
+  // Link previews (iMessage, Twitter/X, Reddit, Discord) show the logo.
+  openGraph: {
+    siteName: 'Find Your Nights',
+    type: 'website',
+    images: [{ url: '/logo.png', width: 1200, height: 1200 }],
+  },
+  twitter: {
+    card: 'summary',
+    images: ['/logo.png'],
+  },
   // Belt-and-suspenders with robots.ts: emit <meta name="robots" content="noindex">
   // on every non-production deployment (dev/preview), so dev never gets indexed.
   ...(process.env.VERCEL_ENV !== 'production'
